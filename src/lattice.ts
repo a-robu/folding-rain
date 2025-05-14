@@ -44,39 +44,6 @@ export function isCloseTo(x: number, target: number, absTol: number = 0.1) {
     return Math.abs(x - target) < absTol;
 }
 
-// /**
-//    * Holds two points, x and y.
-//    */
-// export class Vector2D {
-//     x: number;
-//     y: number;
-
-//     constructor(x: number, y: number) {
-//         this.x = x;
-//         this.y = y;
-//     }
-
-//     toString() {
-//         return `(${this.x}, ${this.y})`;
-//     }
-
-//     isCloseTo(other: Vector2D) {
-//         return isCloseTo(this.x, other.x) && isCloseTo(this.y, other.y)
-//     }
-
-//     equals(other: Vector2D) {
-//         return this.isCloseTo(other)
-//     }
-
-//     add(other: Vector2D) {
-//         return new Vector2D(this.x + other.x, this.y + other.y)
-//     }
-
-//     valueOf() {
-//         return this.x + this.y * 1e6;
-//     }
-// }
-
 /**
  * This defines all valid reflection axes of the lattice. The keys are the
  * axes and the values are the permutations of the cardinal directions
@@ -201,34 +168,6 @@ export class Cell {
     }
 }
 
-//     /**
-//        * Draws the cell as a string. The string representation is a 2x2 grid of
-//        * characters, where each character represents a triangle in the cell.
-//        * The return value is an array of two strings, each representing one line.
-//        */
-//     drawAsStringLines() {
-//         let topLine = "";
-//         let bottomLine = "";
-//         if (this.N) {
-//             topLine += this.W ? "■" : "◥";
-//             topLine += this.E ? "■" : "◤";
-//         }
-//         else {
-//             topLine += this.W ? "◣" : " ";
-//             topLine += this.E ? "◢" : " ";
-//         }
-//         if (this.S) {
-//             bottomLine += this.W ? "■" : "◢";
-//             bottomLine += this.E ? "■" : "◣";
-//         }
-//         else {
-//             bottomLine += this.W ? "◤" : " ";
-//             bottomLine += this.E ? "◥" : " ";
-//         }
-//         return [topLine, bottomLine];
-//     }
-// }
-
 /**
  * Represents the entire lattice of cells (made of individual cells arranged in a
  * square grid).
@@ -255,18 +194,6 @@ export class Lattice {
         }
         return grid;
     }
-
-    // drawAsString() {
-    //     let result = "";
-    //     for (let y = 0; y < this.height; y++) {
-    //         const lines = this.cells.map(row => row[y].drawAsStringLines())
-    //         const topLine = lines.map(line => line[0]).join("")
-    //         const bottomLine = lines.map(line => line[1]).join("")
-    //         result += topLine + "\n";
-    //         result += bottomLine + "\n";
-    //     }
-    //     return result;
-    // }
 
     /**
      * Provides all the vertices of the lattice (and therefore all the points that can be

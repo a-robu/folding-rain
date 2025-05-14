@@ -18,27 +18,6 @@ describe("isCloseTo", () => {
     })
 })
 
-// describe("Vertex2D", () => {
-//     describe.skip("when placed inside a set", () => {
-//         test("duplicates are not added", () => {
-//             const set = new Set<Vector2D>();
-//             const v1 = new Vector2D(1.0, 1.0);
-//             const v2 = new Vector2D(1.0, 1.0);
-//             set.add(v1);
-//             set.add(v2);
-//             expect(set.size).toBe(1);            
-//         })
-//     })
-
-//     test("isCloseTo", () => {
-//         let v = new Vector2D(1.0, 1.0);
-//         expect(v.isCloseTo(new Vector2D(1.0, 1.00001))).toBe(true);
-//         expect(v.isCloseTo(new Vector2D(1.0, 1.05))).toBe(true);
-//         expect(v.isCloseTo(new Vector2D(1.0, 1.0))).toBe(true);
-//         expect(v.isCloseTo(new Vector2D(1.0, 1.3))).toBe(false);
-//     })
-// })
-
 describe("Cell", () => {
     test.skip("setMany", () => {
         let cell = new Cell();
@@ -48,71 +27,6 @@ describe("Cell", () => {
         expect(cell.S).toBe(false);
         expect(cell.W).toBe(false);
     })
-
-    // describe("drawStringLines", () => {
-    //     test.each([
-    //         ["N", [
-    //             "◥◤",
-    //             "    "
-    //         ]],
-    //         ["S", [
-    //             "    ",
-    //             "◢◣"
-    //         ]],
-    //         ["W", [
-    //             "◣ ",
-    //             "◤ "
-    //         ]],
-    //         ["E", [
-    //             " ◢",
-    //             " ◥"
-    //         ]]
-    //     ])("draws %s triangle", (direction, lines) => {
-    //         let cell = new Cell();
-    //         cell.set(direction, true);
-    //         expect(cell.drawAsStringLines()).toEqual(lines);
-    //     })
-
-    //     test("draws empty cell", () => {
-    //         let cell = new Cell();
-    //         expect(cell.drawAsStringLines()).toEqual([
-    //             "    ",
-    //             "    "
-    //         ]);
-    //     })
-
-    //     test("draws full cell", () => {
-    //         let cell = new Cell();
-    //         cell.setMany("NSEW", true);
-    //         expect(cell.drawAsStringLines()).toEqual([
-    //             "■■",
-    //             "■■"
-    //         ]);
-    //     })
-
-    //     test.each([
-    //         ["NW", [
-    //             "■◤",
-    //             "◤ "
-    //         ]],
-    //         ["SW", [
-    //             "◣ ",
-    //             "■◣"
-    //         ]],
-    //         ["SE", [
-    //             " ◢",
-    //             "◢■"
-    //         ]],
-    //         ["NE", [
-    //             "◥■",
-    //             " ◥"
-    //         ]]
-    //     ])("draws connected %s triangles", (directions, lines) => {
-    //         let cell = new Cell();
-    //         cell.setMany(directions, true);
-    //         expect(cell.drawAsStringLines()).toEqual(lines);
-    //     })
-    // })
 
     describe("flipped", () => {
         test.each([
@@ -153,22 +67,6 @@ describe("Lattice", () => {
             expect(vertices.length).toBe(expected);
         })
     })
-
-    // describe("drawAsString", () => {
-    //     test("draws a 45 deg rotated square in the middle of a 2x2 lattice", () => {
-    //         const lattice = new Lattice(2, 2);
-    //         lattice.cells[0][0].setMany("SE", true);
-    //         lattice.cells[1][0].setMany("SW", true);
-    //         lattice.cells[0][1].setMany("NE", true);
-    //         lattice.cells[1][1].setMany("NW", true);
-    //         expect(lattice.drawAsString()).toBe(
-    //             " ◢◣ \n" +
-    //             "◢■■◣\n" +
-    //             "◥■■◤\n" +
-    //             " ◥◤ \n"
-    //         );
-    //     })
-    // })
 
     describe("isPerimeterVertex", () => {
         test("returns true (0, 0)", () => {

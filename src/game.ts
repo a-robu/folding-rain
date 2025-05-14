@@ -106,26 +106,26 @@ export class Game {
     }
 
     drawGrid(board: Board) {
-        for (let y = 0; y < board.gridSize; y ++) {
+        for (let y = 0; y < board.height; y++) {
             let path = new paper.Path()
             path.moveTo(new paper.Point(0, y * board.gridIncrement))
-            path.lineTo(new paper.Point((board.gridSize - 1) * board.gridIncrement, y * board.gridIncrement))
+            path.lineTo(new paper.Point((board.width - 1) * board.gridIncrement, y * board.gridIncrement))
             path.strokeColor = new paper.Color(0.95, 0.95, 0.95)
             path.strokeWidth = 1
             this.gameLayer.addChild(path)
         }
     
-        for (let x = 0; x < board.gridSize; x ++) {
+        for (let x = 0; x < board.width; x++) {
             let path = new paper.Path()
             path.moveTo(new paper.Point(x * board.gridIncrement, 0))
-            path.lineTo(new paper.Point(x * board.gridIncrement, (board.gridSize - 1) * board.gridIncrement))
+            path.lineTo(new paper.Point(x * board.gridIncrement, (board.height - 1) * board.gridIncrement))
             path.strokeColor = new paper.Color(0.95, 0.95, 0.95)
             path.strokeWidth = 1
             this.gameLayer.addChild(path)
         }
     
-        for (let x = 0; x < board.gridSize; x ++) {
-            for (let y = 0; y < board.gridSize; y ++) {
+        for (let x = 0; x < board.width; x++) {
+            for (let y = 0; y < board.height; y++) {
                 let gridPoint = new paper.Point(x, y)
                 let path = new paper.Path.Circle(board.gridToPaperCoordinates(gridPoint), 1)
                 path.fillColor = new paper.Color(0.8, 0.8, 0.8)

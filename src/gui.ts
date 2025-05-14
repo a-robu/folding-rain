@@ -112,7 +112,7 @@ export class GUI {
 
     centerView() {
         let bottomRightCorner = new paper.Point(
-            this.board.gridSize - 1, this.board.gridSize - 1)
+            this.board.width - 1, this.board.height - 1)
         this.view.center = this.board.gridToPaperCoordinates(bottomRightCorner).multiply(0.5)
     }
 

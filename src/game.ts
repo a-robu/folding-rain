@@ -3,6 +3,13 @@ import type { Board } from "./board"
 import type { UnfoldPlan } from "./interact"
 import paper from "paper"
 
+/**
+ * Pick one element at random from an array.
+ */
+function randomChoice<T>(array: T[]): T {
+    return array[Math.floor(array.length * Math.random())];
+}
+
 class HingeProcess {
     start: paper.Point
     end: paper.Point
@@ -54,6 +61,8 @@ export class Game {
     private processes: HingeProcess[] = []
     board: Board
     gameLayer: paper.Layer
+    lastTick: number = 0
+    readonly tickInterval: number = 1 / 60
 
     constructor(board: Board, gameLayer: paper.Layer) {
         this.board = board
@@ -61,7 +70,13 @@ export class Game {
     }
 
 
-    onFrame(event: paper.Event & { delta: number }) {
+    onFrame(event: paper.Event & { delta: number, time: number }) {
+        // Check if the time since the last tick is greater than the tick interval
+        while (this.lastTick < event.time) {
+            this.lastTick += this.tickInterval
+            this.onTick()
+        }
+
         for (let i = 0; i < this.processes.length; i++) {
             let process = this.processes[i]
             process.progress += event.delta
@@ -72,6 +87,32 @@ export class Game {
                 i--
                 continue
             }
+        }
+    }
+
+    randomlyRainSomewhere() {
+        // Add one "rain" drop (an unfolding of a background triangle).
+        let rainDropPlan: UnfoldPlan | null = null
+        while (rainDropPlan == null) {
+            let bgNodes = this.board.getBgNodes()
+            let randomNode = randomChoice(bgNodes)
+            let wedges = this.board.all90DegWedges(randomNode)
+            if (wedges.length == 0) {
+                continue
+            }
+            let randomWedge = randomChoice(wedges)
+            let unfoldPlans = this.board.allValidWedgeExpansions(randomNode, randomWedge)
+            if (unfoldPlans.length == 0) {
+                continue
+            }
+            rainDropPlan = randomChoice(unfoldPlans)
+        }
+        this.unfold(rainDropPlan);
+    }
+
+    onTick() {
+        if (Math.random() < 0.01) {
+            this.randomlyRainSomewhere()
         }
     }
 

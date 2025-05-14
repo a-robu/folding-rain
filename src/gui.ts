@@ -1,11 +1,10 @@
 import { defineUnfoldFromBg, snapToDiagonalOrAALine } from "./interact"
 import { Game } from "./game"
-import type { Board } from "./board"
+import { Board } from "./board"
 import paper from "paper"
+import { selectNearestRay } from "./mathy/rays"
 
 type ToolChoices = "pan" | "unfold"
-
-
 
 // let dragLine = new paper.Path()
 // dragLine.visible = false
@@ -22,7 +21,6 @@ type ToolChoices = "pan" | "unfold"
 // dragSecondTriangle.opacity = 0.5
 // dragSecondTriangle.strokeWidth = 0
 
-
 export class GUI {
     private gridSelectionDot: paper.Path.Circle
     private dragSquare: paper.Path
@@ -31,6 +29,7 @@ export class GUI {
     private game: Game
     private board: Board
     private view: paper.View
+    private latticeVisualisation: paper.Group = new paper.Group()
     panButton: HTMLElement
     foldButton: HTMLElement
     // private unfoldPlan: null | {
@@ -53,9 +52,9 @@ export class GUI {
 
     /**
      * Creates the GUI class, the UI elements and hooks up some of the event listeners!
-     * @param game 
-     * @param uiLayer 
-     * @param setViewCenter 
+     * @param game
+     * @param uiLayer
+     * @param setViewCenter
      */
     constructor(
         board: Board,
@@ -73,7 +72,8 @@ export class GUI {
         this.view = view
 
         // Initialise the selection dot GUI element
-        this.gridSelectionDot = new paper.Path.Circle(new paper.Point(0, 0), 4)
+        this.gridSelectionDot = new paper.Path.Circle(new paper.Point(0, 0), 0.15)
+        this.gridSelectionDot.strokeWidth = 0.05
         this.gridSelectionDot.strokeColor = new paper.Color(0.5, 0.5, 0.5)
         this.gridSelectionDot.visible = false
         uiLayer.addChild(this.gridSelectionDot)
@@ -85,20 +85,19 @@ export class GUI {
         this.dragSquare.visible = false
         uiLayer.addChild(this.dragSquare)
 
-        this.panButton = panButton;
-        this.foldButton = foldButton;
+        this.panButton = panButton
+        this.foldButton = foldButton
         this.setTool("unfold")
     }
 
     private setTool(tool: ToolChoices) {
         this.currentTool = tool
         if (tool == "pan") {
-            this.panButton.classList.add('selected');
-            this.foldButton.classList.remove('selected');
-        }
-        else if (tool == "unfold") {
-            this.foldButton.classList.add('selected');
-            this.panButton.classList.remove('selected');
+            this.panButton.classList.add("selected")
+            this.foldButton.classList.remove("selected")
+        } else if (tool == "unfold") {
+            this.foldButton.classList.add("selected")
+            this.panButton.classList.remove("selected")
         }
     }
 
@@ -111,69 +110,76 @@ export class GUI {
     }
 
     centerView() {
-        let bottomRightCorner = new paper.Point(
-            this.board.width - 1, this.board.height - 1)
-        this.view.center = this.board.gridToPaperCoordinates(bottomRightCorner).multiply(0.5)
+        let bottomRightCorner = new paper.Point(this.board.width - 1, this.board.height - 1)
+        this.view.center = bottomRightCorner.multiply(0.5)
+    }
+
+    hideUnfoldPreview() {
+        this.dragSquare.visible = false
+        this.dragSquare.removeSegments()
     }
 
     onMouseDrag(event: paper.ToolEvent) {
         if (this.currentTool == "pan") {
-            let pan_offset = event.point.subtract(event.downPoint);
-            this.view.center = this.view.center.subtract(pan_offset);
-        }
-        else if (this.currentTool == "unfold") {
-            let gridStart = this.board.paperToGridCoordinates(event.downPoint)
-            if (!this.board.isInBounds(gridStart) || !this.board.lattice.vertexIsClear(gridStart)) {
-                this.dragSquare.visible = false
+            let pan_offset = event.point.subtract(event.downPoint)
+            this.view.center = this.view.center.subtract(pan_offset)
+        } else if (this.currentTool == "unfold") {
+            // Only show it if we update it successfully
+            this.dragSquare.visible = false
+            // Always hide it while dragging
+            this.gridSelectionDot.visible = false
+            let gridStart = Board.snapToNearestVertex(event.downPoint)
+            if (
+                !this.board.vertexIsInBounds(gridStart) ||
+                !this.board.lattice.vertexIsClear(gridStart)
+            ) {
                 return
             }
 
-            let gridRequestedEnd = this.board.paperToGridCoordinates(event.point)
-            let gridEnd = snapToDiagonalOrAALine(gridStart, gridRequestedEnd)
-    
-            if (gridStart.equals(gridEnd)) {
-                this.dragSquare.visible = false
-                this.lastGridDrag = null
-                return
-            }
+            let rays = Board.validSquareRays(gridStart)
+            let offset = event.point.subtract(gridStart)
+            let nearestRay = rays[selectNearestRay(rays, offset)]
+
+            let gridEnd = gridStart.add(nearestRay)
 
             this.lastGridDrag = [gridStart, gridEnd]
-
             let triangulisation = defineUnfoldFromBg(gridStart, gridEnd)
             this.dragSquare.visible = true
             this.dragSquare.removeSegments()
-            this.dragSquare.add(this.board.gridToPaperCoordinates(triangulisation.start))
-            this.dragSquare.add(this.board.gridToPaperCoordinates(triangulisation.hinges[0]))
-            this.dragSquare.add(this.board.gridToPaperCoordinates(triangulisation.end))
-            this.dragSquare.add(this.board.gridToPaperCoordinates(triangulisation.hinges[1]))
+            this.dragSquare.add(triangulisation.start)
+            this.dragSquare.add(triangulisation.hinges[0])
+            this.dragSquare.add(triangulisation.end)
+            this.dragSquare.add(triangulisation.hinges[1])
             this.dragSquare.closed = true
         }
     }
 
     onWheel(event: WheelEvent) {
         // LOL code copied from https://codepen.io/hichem147/pen/dExxNK
-        let newZoom = this.view.zoom; 
-        let oldZoom = this.view.zoom;
-        if (event.deltaY > 0) {			
-            newZoom = this.view.zoom * 0.8;
+        let newZoom = this.view.zoom
+        let oldZoom = this.view.zoom
+        if (event.deltaY > 0) {
+            newZoom = this.view.zoom * 0.8
         } else {
-            newZoom = this.view.zoom * 1.2;
+            newZoom = this.view.zoom * 1.2
         }
-        let beta = oldZoom / newZoom;
-        let mousePosition = new paper.Point(event.offsetX, event.offsetY);
-        let viewPosition = this.view.viewToProject(mousePosition);
-        let mpos = viewPosition;
-        let ctr = this.view.center;
-        let pc = mpos.subtract(ctr);
-        let offset = mpos.subtract(pc.multiply(beta)).subtract(ctr);	
-        this.view.zoom = newZoom;
-        this.view.center = this.view.center.add(offset);
+        let beta = oldZoom / newZoom
+        let mousePosition = new paper.Point(event.offsetX, event.offsetY)
+        let viewPosition = this.view.viewToProject(mousePosition)
+        let mpos = viewPosition
+        let ctr = this.view.center
+        let pc = mpos.subtract(ctr)
+        let offset = mpos.subtract(pc.multiply(beta)).subtract(ctr)
+        this.view.zoom = newZoom
+        this.view.center = this.view.center.add(offset)
 
-        event.preventDefault();
+        event.preventDefault()
     }
 
     onMouseUp(_: WheelEvent) {
         if (this.currentTool == "unfold") {
+            // Dragging is done, we can show it again
+            this.gridSelectionDot.visible = true
             if (this.lastGridDrag == null) {
                 return
             }
@@ -181,54 +187,74 @@ export class GUI {
             let unfoldPlan = defineUnfoldFromBg(gridStart, gridEnd)
             this.dragSquare.visible = false
             this.game.unfold(unfoldPlan)
+            this.latticeVisualisation.removeChildren().map(child => {
+                child.remove()
+            })
+
+            for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
+                let state = this.board.lattice.getState(triangleIndex)
+                // check if state is a number
+                if (typeof state !== "number") {
+                    continue
+                }
+                let path = this.board.lattice.makeTrianglePolygon(triangleIndex)
+                // path.position = path.position
+                // path.scale(this.board.gridIncrement)
+                path.fillColor = new paper.Color(1, 0, 1, 0.5)
+                path.visible = true
+                this.latticeVisualisation.addChild(path)
+                // this.latticeTriangles.push(path)
+            }
+
+            // for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
+            //     let state = this.board.lattice.getState(triangleIndex)
 
             this.lastGridDrag = null
         }
     }
 
     onMouseMove(event: paper.ToolEvent) {
+        if (!(this.currentTool == "unfold")) {
+            return
+        }
         // add a purple dot at the point matching the grid coordinate
-        let gridPoint = this.board.paperToGridCoordinates(event.point)
-        let snappedPoint = this.board.gridToPaperCoordinates(gridPoint)
+        let vertex = Board.snapToNearestVertex(event.point)
         this.gridSelectionDot.visible = false
-        if (!this.board.isInBounds(gridPoint)) {
+        if (!this.board.vertexIsInBounds(vertex)) {
             return
         }
-        if (!this.board.lattice.vertexIsClear(gridPoint)) {
+        if (!this.board.lattice.vertexIsClear(vertex)) {
             return
         }
-        let wedges = this.board.all90DegWedges(gridPoint)
-        if (wedges.length == 0) {
-            return
-        }
-        let anyExpansions = false
-        for (let wedge of wedges) {
-            let expansions = this.board.allValidWedgeExpansions(gridPoint, wedge)
-            if (expansions.length > 0) {
-                anyExpansions = true
-            }
-        }
-        if (!anyExpansions) {
-            return
-        }
-        this.gridSelectionDot.position = snappedPoint
+        // let wedges = this.board.all90DegWedges(vertex)
+        // if (wedges.length == 0) {
+        //     return
+        // }
+        // let anyExpansions = false
+        // for (let wedge of wedges) {
+        //     let expansions = this.board.allValidWedgeExpansions(vertex, wedge)
+        //     if (expansions.length > 0) {
+        //         anyExpansions = true
+        //     }
+        // }
+        // if (!anyExpansions) {
+        //     return
+        // }
+        this.gridSelectionDot.position = vertex
         this.gridSelectionDot.visible = true
 
-//         let wedges = this.board.all90DegWedges(randomNode)
-    //         if (wedges.length == 0) {
-    //             continue
-    //         }
-    //         let randomWedge = randomChoice(wedges)
-    //         let unfoldPlans = this.board.allValidWedgeExpansions(randomNode, randomWedge)
-    //         if (unfoldPlans.length == 0) {
-    //             continue
-    //         }
-    //         rainDropPlan = randomChoice(unfoldPlans)
-    //     }
-    //     this.unfold(rainDropPlan);
-    // }
-
-           
+        //         let wedges = this.board.all90DegWedges(randomNode)
+        //         if (wedges.length == 0) {
+        //             continue
+        //         }
+        //         let randomWedge = randomChoice(wedges)
+        //         let unfoldPlans = this.board.allValidWedgeExpansions(randomNode, randomWedge)
+        //         if (unfoldPlans.length == 0) {
+        //             continue
+        //         }
+        //         rainDropPlan = randomChoice(unfoldPlans)
+        //     }
+        //     this.unfold(rainDropPlan);
+        // }
     }
-    
 }

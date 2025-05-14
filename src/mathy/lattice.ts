@@ -20,10 +20,10 @@ export function snapPointToGridBasis(point: paper.Point): paper.Point {
 
 /**
  * Defines a Tetrakis square tiling and means of manipulating it.
- * 
+ *
  * This is a 2D lattice of isosceles right triangles arranged in a square grid.
  * It looks like this:
- * 
+ *
  *    +---+---+---+---+---+---+
  *    |\ /|\ /|\ /|\ /|\ /|\ /|
  *    | x | x | x | x | x | x |
@@ -33,7 +33,7 @@ export function snapPointToGridBasis(point: paper.Point): paper.Point {
  *    | x | x | x | x | x | x |
  *    |/ \|/ \|/ \|/ \|/ \|/ \|
  *    +---+---+---+---+---+---+
- * 
+ *
  * In this codebase we index the triangles in the lattice using three coorinates:
  * two numbers (x, y) for the cell and one letter (N, E, S, W) for the triangle.
  */
@@ -48,26 +48,26 @@ export const DIR = {
     E: "E",
     S: "S",
     W: "W"
-} as const;
+} as const
 type CardinalDir = keyof typeof DIR
 export const CardinalDirs: CardinalDir[] = [DIR.N, DIR.E, DIR.S, DIR.W]
 
 /**
  * Floating point number equality check with absolute tolerance.
- * @param x 
- * @param target 
+ * @param x
+ * @param target
  * @param absTol - defaults to 0.1, appropriate to discriminate between lattice vertices
- * @returns 
+ * @returns
  */
 export function isCloseTo(x: number, target: number, absTol: number = 0.1) {
-    return Math.abs(x - target) < absTol;
+    return Math.abs(x - target) < absTol
 }
 
 // /**
 //  * This defines all valid reflection axes of the lattice. The keys are the
 //  * axes and the values are the permutations of the cardinal directions
 //  * that result from flipping the lattice around that axis.
-//  * 
+//  *
 //  * These permutations are used by the `flipped` method of the Cell class to
 //  * apply the reflection operation.
 //  */
@@ -103,7 +103,7 @@ export function isCloseTo(x: number, target: number, absTol: number = 0.1) {
 // ])
 
 type TriangleIndex = {
-    cell: paper.Point,
+    cell: paper.Point
     cardinalDirection: CardinalDir
 }
 
@@ -118,7 +118,7 @@ type TriangleIndex = {
 
 export const BKFG = {
     Shape: "Shape",
-    Background: "Background",
+    Background: "Background"
 } as const
 type BackgroundOrShape = keyof typeof BKFG
 export type CellState = number | null | BackgroundOrShape
@@ -152,12 +152,15 @@ export class Cell {
             new paper.Point(0.5, 0.5)
         ])
         polygon.closed = true
-        polygon.rotate({
-            [DIR.N]: 0,
-            [DIR.E]: 90,
-            [DIR.S]: 180,
-            [DIR.W]: 270
-        }[dir], new paper.Point(0.5, 0.5))
+        polygon.rotate(
+            {
+                [DIR.N]: 0,
+                [DIR.E]: 90,
+                [DIR.S]: 180,
+                [DIR.W]: 270
+            }[dir],
+            new paper.Point(0.5, 0.5)
+        )
         return polygon
     }
 
@@ -227,7 +230,7 @@ export class Cell {
  * square grid).
  */
 export class Lattice {
-    cells: Cell[][];
+    private cells: Cell[][]
 
     constructor(width: number, height: number, initialState: CellState = null) {
         this.cells = this.createEmptyGrid(width, height, initialState)
@@ -242,20 +245,25 @@ export class Lattice {
     }
 
     private createEmptyGrid(width: number, height: number, initialState: CellState): Cell[][] {
-        const cells: Cell[][] = [];
+        const cells: Cell[][] = []
         for (let x = 0; x < width; x++) {
-            const column: Cell[] = [];
+            const column: Cell[] = []
             for (let y = 0; y < height; y++) {
                 column.push(new Cell(initialState))
             }
             cells.push(column)
         }
-        return cells;
+        return cells
     }
 
-    getState(triangleIndex: TriangleIndex) {
+    getState(triangleIndex: TriangleIndex): CellState {
         const cell = this.cells[triangleIndex.cell.x][triangleIndex.cell.y]
-        return cell.states.get(triangleIndex.cardinalDirection)
+        return cell.states.get(triangleIndex.cardinalDirection)!
+    }
+
+    setState(triangleIndex: TriangleIndex, state: CellState) {
+        const cell = this.cells[triangleIndex.cell.x][triangleIndex.cell.y]
+        cell.states.set(triangleIndex.cardinalDirection, state)
     }
 
     makeTrianglePolygon(triangleIndex: TriangleIndex) {
@@ -275,8 +283,7 @@ export class Lattice {
                     cardinalDirection: dir
                 })
             }
-        }
-        else {
+        } else {
             if (vertex.x > 0) {
                 if (vertex.y > 0) {
                     // top-left corner is available
@@ -352,7 +359,7 @@ export class Lattice {
                 return false
             }
         }
-        return true        
+        return true
     }
 
     /**
@@ -391,7 +398,7 @@ export class Lattice {
             }
         }
 
-        return vertices;
+        return vertices
     }
 
     isPerimeterVertex(vertex: paper.Point) {
@@ -416,7 +423,9 @@ export class Lattice {
             const centroid = Lattice.centroid(triangle)
             if (polygon.contains(centroid)) {
                 lattice.cells[triangle.cell.x][triangle.cell.y].states.set(
-                    triangle.cardinalDirection, BKFG.Shape)
+                    triangle.cardinalDirection,
+                    BKFG.Shape
+                )
             }
         }
         return lattice
@@ -440,7 +449,7 @@ export class Lattice {
 
     static centroid(triangle: TriangleIndex) {
         // The centroid of any triangle is 2/3 of the way from the apex
-        let distanceToCentroid = new paper.Point(0, -2 / 3 * 0.5)
+        let distanceToCentroid = new paper.Point(0, (-2 / 3) * 0.5)
         // Now we rotate it to correspond to other side triangles.
         let rotation = {
             [DIR.N]: 0,

@@ -1,15 +1,22 @@
 import { easeOutBounce, cosineEase } from "./mathy/animation"
 import { getGridDiagonals } from "./mathy/diagonal-lines"
-import type { Board } from "./board"
-import type { UnfoldPlan } from "./interact"
+import { Board } from "./board"
+import { defineUnfoldFromBg, unfoldPlanToPath, type UnfoldPlan } from "./interact"
 import paper from "paper"
 
 /**
  * Pick one element at random from an array.
  */
 function randomChoice<T>(array: T[]): T {
-    return array[Math.floor(array.length * Math.random())];
+    return array[Math.floor(array.length * Math.random())]
 }
+
+const GRID_LINES_COLOR = new paper.Color(0.95, 0.95, 0.95)
+// const GRID_LINES_COLOR = new paper.Color(0, 0, 0)
+const GRID_LINES_WIDTH = 0.05
+const GRID_DOTS_COLOR = new paper.Color(0.8, 0.8, 0.8)
+// const GRID_DOTS_COLOR = new paper.Color(0, 0, 0)
+const GRID_DOTS_RADIUS = 0.065
 
 class HingeProcess {
     start: paper.Point
@@ -45,17 +52,14 @@ class HingeProcess {
         this.tip.point = this.start.add(this.end.subtract(this.start).multiply(animatedProgress))
         if (animatedProgress < 0.5) {
             this.flap.fillColor = this.startColor
-            this.flap.strokeColor = this.startColor
-        }
-        else {
+            // this.flap.strokeColor = this.startColor
+        } else {
             this.flap.fillColor = this.endColor
-            this.flap.strokeColor = this.endColor
+            // this.flap.strokeColor = this.endColor
         }
     }
 
-    onDone() {
-
-    }
+    onDone() {}
 }
 
 export class Game {
@@ -70,7 +74,7 @@ export class Game {
         this.gameLayer = gameLayer
     }
 
-    onFrame(event: paper.Event & { delta: number, time: number }) {
+    onFrame(event: paper.Event & { delta: number; time: number }) {
         // Check if the time since the last tick is greater than the tick interval
         while (this.lastTick < event.time) {
             this.lastTick += this.tickInterval
@@ -91,28 +95,26 @@ export class Game {
     }
 
     randomlyRainSomewhere() {
-        // Add one "rain" drop (an unfolding of a background triangle).
-        let rainDropPlan: UnfoldPlan | null = null
-        while (rainDropPlan == null) {
-            let bgNodes = this.board.getBgNodes()
-            let randomNode = randomChoice(bgNodes)
-            let wedges = this.board.all90DegWedges(randomNode)
-            if (wedges.length == 0) {
+        for (let attempt = 0; attempt < 10; attempt++) {
+            let startVertex = randomChoice(this.board.lattice.allVertices())
+            let rays = Board.validSquareRays(startVertex)
+            let endVertex = startVertex.add(randomChoice(rays))
+            let unfoldPlan = defineUnfoldFromBg(startVertex, endVertex)
+            let newPolygon = unfoldPlanToPath(unfoldPlan)
+            if (!this.board.pathInBounds(newPolygon)) {
                 continue
             }
-            let randomWedge = randomChoice(wedges)
-            let unfoldPlans = this.board.allValidWedgeExpansions(randomNode, randomWedge)
-            if (unfoldPlans.length == 0) {
+            if (!this.board.pathClear(newPolygon)) {
                 continue
             }
-            rainDropPlan = randomChoice(unfoldPlans)
+            this.unfold(unfoldPlan)
+            return
         }
-        this.unfold(rainDropPlan);
     }
 
     onTick() {
-        if (Math.random() < 0.01) {
-            // this.randomlyRainSomewhere()
+        if (Math.random() < 0.05) {
+            this.randomlyRainSomewhere()
         }
     }
 
@@ -122,54 +124,52 @@ export class Game {
         // draw the first triangle in black
         let newFirstTriangle = new paper.Path()
         newFirstTriangle.fillColor = new paper.Color(0, 0, 0, 0.5)
-        newFirstTriangle.strokeColor = new paper.Color(0, 0, 0, 0.5)
-        newFirstTriangle.strokeWidth = 0.1
-        newFirstTriangle.add(this.board.gridToPaperCoordinates(plan.start))
-        newFirstTriangle.add(this.board.gridToPaperCoordinates(plan.hinges[0]))
-        newFirstTriangle.add(this.board.gridToPaperCoordinates(plan.hinges[1]))
+        // newFirstTriangle.strokeColor = new paper.Color(0, 0, 0, 0.5)
+        // newFirstTriangle.strokeWidth = 0
+        newFirstTriangle.add(plan.start)
+        newFirstTriangle.add(plan.hinges[0])
+        newFirstTriangle.add(plan.hinges[1])
         newFirstTriangle.closed = true
         // and draw the second triangle too, in white, but place the tip at start
         let newSecondTriangle = new paper.Path()
         newSecondTriangle.fillColor = new paper.Color(1, 1, 1, 0.5)
-        newSecondTriangle.strokeColor = new paper.Color(1, 1, 1, 0.5)
-        newSecondTriangle.strokeWidth = 0.1
-        newSecondTriangle.add(this.board.gridToPaperCoordinates(plan.start))
-        newSecondTriangle.add(this.board.gridToPaperCoordinates(plan.hinges[0]))
-        newSecondTriangle.add(this.board.gridToPaperCoordinates(plan.hinges[1]))
+        // newSecondTriangle.strokeColor = new paper.Color(1, 1, 1, 0.5)
+        // newSecondTriangle.strokeWidth = 0
+        newSecondTriangle.add(plan.start)
+        newSecondTriangle.add(plan.hinges[0])
+        newSecondTriangle.add(plan.hinges[1])
         newSecondTriangle.closed = true
 
-        let newPolygon = new paper.Path()
-        newPolygon.add(plan.start)
-        newPolygon.add(plan.hinges[0])
-        newPolygon.add(plan.end)
-        newPolygon.add(plan.hinges[1])
-        newPolygon.closed = true
+        let newPolygon = unfoldPlanToPath(plan)
         let newId = this.board.newShape(newPolygon)
         for (let triangle of this.latticeTriangles) {
             triangle.remove()
         }
-        this.latticeTriangles = []
-        for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
-            let state = this.board.lattice.getState(triangleIndex)
-            // check if state is a number
-            if (typeof state !== "number") {
-                continue
-            }
-            let path = this.board.lattice.makeTrianglePolygon(triangleIndex)
-            path.position = path.position.multiply(this.board.gridIncrement)
-            path.scale(this.board.gridIncrement)            
-            path.fillColor = new paper.Color(1, 0, 1, 0.5)
-            this.latticeTriangles.push(path)
-        }
+        // this.latticeTriangles = []
+        // for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
+        //     let state = this.board.lattice.getState(triangleIndex)
+        //     // check if state is a number
+        //     if (typeof state !== "number") {
+        //         continue
+        //     }
+        //     let path = this.board.lattice.makeTrianglePolygon(triangleIndex)
+        //     path.position = path.position.multiply(this.board.gridIncrement)
+        //     path.scale(this.board.gridIncrement)
+        //     path.fillColor = new paper.Color(1, 0, 1, 0.5)
+        //     path.visible = true
+        //     this.latticeTriangles.push(path)
+        // }
 
-        this.processes.push(new HingeProcess(
-            this.board.gridToPaperCoordinates(plan.start),
-            this.board.gridToPaperCoordinates(plan.end),
-            new paper.Color(1, 1, 1, 0.5),
-            new paper.Color(0, 0, 0, 0.5),
-            newSecondTriangle,
-            newSecondTriangle.segments[0]
-        ))
+        this.processes.push(
+            new HingeProcess(
+                plan.start,
+                plan.end,
+                new paper.Color(1, 1, 1, 0.5),
+                new paper.Color(0, 0, 0, 0.5),
+                newSecondTriangle,
+                newSecondTriangle.segments[0]
+            )
+        )
     }
 
     drawGrid(board: Board) {
@@ -189,19 +189,18 @@ export class Game {
         // Draw the lines
         for (let line of lines) {
             let path = new paper.Path()
-            path.moveTo(board.gridToPaperCoordinates(line[0]))
-            path.lineTo(board.gridToPaperCoordinates(line[1]))
-            path.strokeColor = new paper.Color(0.95, 0.95, 0.95)
-            path.strokeWidth = 1
+            path.moveTo(line[0])
+            path.lineTo(line[1])
+            path.strokeColor = GRID_LINES_COLOR
+            path.strokeWidth = GRID_LINES_WIDTH
             this.gameLayer.addChild(path)
         }
         // Square corner dots
         for (let x = 0; x <= board.width; x++) {
             for (let y = 0; y <= board.height; y++) {
                 let gridPoint = new paper.Point(x, y)
-                let path = new paper.Path.Circle(board.gridToPaperCoordinates(gridPoint), 1)
-                path.fillColor = new paper.Color(0.8, 0.8, 0.8)
-                path.strokeWidth = 1
+                let path = new paper.Path.Circle(gridPoint, GRID_DOTS_RADIUS)
+                path.fillColor = GRID_DOTS_COLOR
                 this.gameLayer.addChild(path)
             }
         }
@@ -209,9 +208,8 @@ export class Game {
         for (let x = 0; x < board.width; x++) {
             for (let y = 0; y < board.height; y++) {
                 let gridPoint = new paper.Point(x + 0.5, y + 0.5)
-                let path = new paper.Path.Circle(board.gridToPaperCoordinates(gridPoint), 1)
-                path.fillColor = new paper.Color(0.8, 0.8, 0.8)
-                path.strokeWidth = 1
+                let path = new paper.Path.Circle(gridPoint, GRID_DOTS_RADIUS)
+                path.fillColor = GRID_DOTS_COLOR
                 this.gameLayer.addChild(path)
             }
         }

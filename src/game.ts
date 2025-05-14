@@ -1,4 +1,5 @@
-import { easeOutBounce, cosineEase } from "./animation"
+import { easeOutBounce, cosineEase } from "./mathy/animation"
+import { getGridDiagonals } from "./mathy/diagonal-lines"
 import type { Board } from "./board"
 import type { UnfoldPlan } from "./interact"
 import paper from "paper"
@@ -69,7 +70,6 @@ export class Game {
         this.gameLayer = gameLayer
     }
 
-
     onFrame(event: paper.Event & { delta: number, time: number }) {
         // Check if the time since the last tick is greater than the tick interval
         while (this.lastTick < event.time) {
@@ -112,15 +112,17 @@ export class Game {
 
     onTick() {
         if (Math.random() < 0.01) {
-            this.randomlyRainSomewhere()
+            // this.randomlyRainSomewhere()
         }
     }
+
+    latticeTriangles: paper.Path[] = []
 
     unfold(plan: UnfoldPlan) {
         // draw the first triangle in black
         let newFirstTriangle = new paper.Path()
-        newFirstTriangle.fillColor = new paper.Color(0, 0, 0)
-        newFirstTriangle.strokeColor = new paper.Color(0, 0, 0)
+        newFirstTriangle.fillColor = new paper.Color(0, 0, 0, 0.5)
+        newFirstTriangle.strokeColor = new paper.Color(0, 0, 0, 0.5)
         newFirstTriangle.strokeWidth = 0.1
         newFirstTriangle.add(this.board.gridToPaperCoordinates(plan.start))
         newFirstTriangle.add(this.board.gridToPaperCoordinates(plan.hinges[0]))
@@ -128,46 +130,85 @@ export class Game {
         newFirstTriangle.closed = true
         // and draw the second triangle too, in white, but place the tip at start
         let newSecondTriangle = new paper.Path()
-        newSecondTriangle.fillColor = new paper.Color(1, 1, 1)
-        newSecondTriangle.strokeColor = new paper.Color(1, 1, 1)
+        newSecondTriangle.fillColor = new paper.Color(1, 1, 1, 0.5)
+        newSecondTriangle.strokeColor = new paper.Color(1, 1, 1, 0.5)
         newSecondTriangle.strokeWidth = 0.1
         newSecondTriangle.add(this.board.gridToPaperCoordinates(plan.start))
         newSecondTriangle.add(this.board.gridToPaperCoordinates(plan.hinges[0]))
         newSecondTriangle.add(this.board.gridToPaperCoordinates(plan.hinges[1]))
         newSecondTriangle.closed = true
 
+        let newPolygon = new paper.Path()
+        newPolygon.add(plan.start)
+        newPolygon.add(plan.hinges[0])
+        newPolygon.add(plan.end)
+        newPolygon.add(plan.hinges[1])
+        newPolygon.closed = true
+        let newId = this.board.newShape(newPolygon)
+        for (let triangle of this.latticeTriangles) {
+            triangle.remove()
+        }
+        this.latticeTriangles = []
+        for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
+            let state = this.board.lattice.getState(triangleIndex)
+            // check if state is a number
+            if (typeof state !== "number") {
+                continue
+            }
+            let path = this.board.lattice.makeTrianglePolygon(triangleIndex)
+            path.position = path.position.multiply(this.board.gridIncrement)
+            path.scale(this.board.gridIncrement)            
+            path.fillColor = new paper.Color(1, 0, 1, 0.5)
+            this.latticeTriangles.push(path)
+        }
+
         this.processes.push(new HingeProcess(
             this.board.gridToPaperCoordinates(plan.start),
             this.board.gridToPaperCoordinates(plan.end),
-            new paper.Color(1, 1, 1),
-            new paper.Color(0, 0, 0),
+            new paper.Color(1, 1, 1, 0.5),
+            new paper.Color(0, 0, 0, 0.5),
             newSecondTriangle,
             newSecondTriangle.segments[0]
         ))
     }
 
     drawGrid(board: Board) {
-        for (let y = 0; y < board.height; y++) {
+        let lines: [paper.Point, paper.Point][] = []
+        // Horizontal lines
+        for (let y = 0; y <= board.height; y++) {
+            lines.push([new paper.Point(0, y), new paper.Point(board.width, y)])
+        }
+        // Vertical lines
+        for (let x = 0; x <= board.width; x++) {
+            lines.push([new paper.Point(x, 0), new paper.Point(x, board.height)])
+        }
+        // Diagonal lines
+        for (let line of getGridDiagonals(board.width, board.height)) {
+            lines.push(line)
+        }
+        // Draw the lines
+        for (let line of lines) {
             let path = new paper.Path()
-            path.moveTo(new paper.Point(0, y * board.gridIncrement))
-            path.lineTo(new paper.Point((board.width - 1) * board.gridIncrement, y * board.gridIncrement))
+            path.moveTo(board.gridToPaperCoordinates(line[0]))
+            path.lineTo(board.gridToPaperCoordinates(line[1]))
             path.strokeColor = new paper.Color(0.95, 0.95, 0.95)
             path.strokeWidth = 1
             this.gameLayer.addChild(path)
         }
-    
-        for (let x = 0; x < board.width; x++) {
-            let path = new paper.Path()
-            path.moveTo(new paper.Point(x * board.gridIncrement, 0))
-            path.lineTo(new paper.Point(x * board.gridIncrement, (board.height - 1) * board.gridIncrement))
-            path.strokeColor = new paper.Color(0.95, 0.95, 0.95)
-            path.strokeWidth = 1
-            this.gameLayer.addChild(path)
+        // Square corner dots
+        for (let x = 0; x <= board.width; x++) {
+            for (let y = 0; y <= board.height; y++) {
+                let gridPoint = new paper.Point(x, y)
+                let path = new paper.Path.Circle(board.gridToPaperCoordinates(gridPoint), 1)
+                path.fillColor = new paper.Color(0.8, 0.8, 0.8)
+                path.strokeWidth = 1
+                this.gameLayer.addChild(path)
+            }
         }
-    
+        // Square center dots
         for (let x = 0; x < board.width; x++) {
             for (let y = 0; y < board.height; y++) {
-                let gridPoint = new paper.Point(x, y)
+                let gridPoint = new paper.Point(x + 0.5, y + 0.5)
                 let path = new paper.Path.Circle(board.gridToPaperCoordinates(gridPoint), 1)
                 path.fillColor = new paper.Color(0.8, 0.8, 0.8)
                 path.strokeWidth = 1

@@ -1,32 +1,44 @@
 import paper from "paper"
 import type { UnfoldPlan } from "./interact"
+import { BKFG, CardinalDirs, Lattice, snapPointToGridBasis, type CellState } from "./mathy/lattice"
 
-/**
- * Converts a number to its sign or 0 if it's close to zero (within 0.1).
- * @param value a number to snap
- * @returns -1, 0 or 1
- */
-function snapToTrit(value: number): number {
-    if (value > 0.1) {
-        return 1
-    } else if (value < -0.1) {
-        return -1
-    }
-    return 0
+type Patch = {
+    offset: paper.Point
+    lattice: Lattice
 }
 
-function snapPointToGridBasis(point: paper.Point): paper.Point {
-    return new paper.Point(snapToTrit(point.x), snapToTrit(point.y))
+function forgivingFloor(point: paper.Point): paper.Point {
+    const epsilon = 0.01
+    return new paper.Point(
+        Math.abs(point.x - Math.round(point.x)) < epsilon ? Math.round(point.x) : Math.floor(point.x),
+        Math.abs(point.y - Math.round(point.y)) < epsilon ? Math.round(point.y) : Math.floor(point.y)
+    )
+}
+
+function forgivingCeil(point: paper.Point): paper.Point {
+    const epsilon = 0.01
+    return new paper.Point(
+        Math.abs(point.x - Math.round(point.x)) < epsilon ? Math.round(point.x) : Math.ceil(point.x),
+        Math.abs(point.y - Math.round(point.y)) < epsilon ? Math.round(point.y) : Math.ceil(point.y)
+    )
 }
 
 export class Board {
     readonly gridIncrement = 25
     readonly width: number
     readonly height: number
+    nextShapeId = 0
+    lattice: Lattice
+    shapes: Map<number, paper.Path> = new Map()
 
+    /**
+     * @param width - The width of the board in grid units (not the number of cells!)
+     * @param height - The height of the board in grid units (not the number of cells!)
+     */
     constructor(width: number, height: number) {
         this.width = width
         this.height = height
+        this.lattice = new Lattice(width, height, BKFG.Background)
     }
 
     gridToPaperCoordinates(gridPoint: paper.Point): paper.Point {
@@ -42,15 +54,17 @@ export class Board {
 
     isInBounds(gridPoint: paper.Point): boolean {
         return (
-            gridPoint.x >= 0 && gridPoint.x < this.width
-            && gridPoint.y >= 0 && gridPoint.y < this.height)
+            gridPoint.x >= 0 && gridPoint.x <= this.width
+            && gridPoint.y >= 0 && gridPoint.y <= this.height)
     }
 
     getBgNodes(): paper.Point[] {
         const bgNodes: paper.Point[] = []
-        for (let x = 0; x < this.width; x++) {
-            for (let y = 0; y < this.height; y++) {
-                bgNodes.push(new paper.Point(x, y))
+        for (let x = 0; x <= this.width; x++) {
+            for (let y = 0; y <= this.height; y++) {
+                if (this.lattice.vertexIsClear(new paper.Point(x, y))) {
+                    bgNodes.push(new paper.Point(x, y))
+                }
             }
         }
         return bgNodes
@@ -99,6 +113,13 @@ export class Board {
                 || !this.isInBounds(hinges[1])) {
                 break
             }
+            if (!this.lattice.lineIsAvailable(apex, hinges[0])
+                || !this.lattice.lineIsAvailable(apex, hinges[1])
+                || !this.lattice.lineIsAvailable(hinges[0], hinges[1])
+                || !this.lattice.lineIsAvailable(hinges[0], end)
+                || !this.lattice.lineIsAvailable(hinges[1], end)) {
+                    break
+                }
             unfoldPlans.push({
                 start: apex,
                 hinges: [hinges[0], hinges[1]],
@@ -107,5 +128,52 @@ export class Board {
             expandBy++
         }
         return unfoldPlans;
+    }
+
+    static rasterize(polygon: paper.Path): Patch {
+        let originalBoundingBox = polygon.bounds
+        let topLeft = forgivingFloor(originalBoundingBox.topLeft)
+        let bottomRight = forgivingCeil(originalBoundingBox.bottomRight)
+        // We assume the polygon is already aligned to the grid,
+        // but still do a sanity check
+        if ([topLeft.x, topLeft.y, bottomRight.x, bottomRight.y].some(
+            p => p % 1 > 0.1)) {
+            throw new Error("Polygon is not aligned to the grid")
+        }
+        let translatedPolygon = polygon.clone()
+        translatedPolygon.translate(topLeft.multiply(-1))
+        let patchSize = bottomRight.add(topLeft.multiply(-1))
+        return {
+            offset: topLeft,
+            lattice: Lattice.rasterizePatch(patchSize, translatedPolygon)
+        }
+    }
+
+    applyPatch(patch: Patch, cellState: CellState) {
+        for (let x = 0; x < patch.lattice.width; x++) {
+            for (let y = 0; y < patch.lattice.height; y++) {
+                for (let dir of CardinalDirs) {
+                    if (patch.lattice.cells[x][y].states.get(dir) == BKFG.Shape) {
+                        let targetCell = this.lattice.cells[x + patch.offset.x][y + patch.offset.y]
+                        targetCell.states.set(dir, cellState)
+                    }
+                }
+            }
+        }                
+    }
+
+    /**
+     * Creates a new shape on the board and returns its ID.
+     * @param polygon the polygon to be added to the board
+     * @returns the ID of the new shape
+     */
+    newShape(polygon: paper.Path): number {
+        const id = this.nextShapeId
+        this.nextShapeId++
+        let copy = polygon.clone()
+        this.shapes.set(id, copy)
+        let patch = Board.rasterize(copy)
+        this.applyPatch(patch, id)
+        return id
     }
 }

@@ -11,7 +11,7 @@ gameLayer.name = "board"
 let uiLayer = new paper.Layer()
 uiLayer.name = "ui"
 
-let board = new Board(5, 5)
+let board = new Board(15, 5)
 let game = new Game(board, gameLayer)
 let guiTool = new paper.Tool();
 let panButton = document.getElementById("panButton")
@@ -31,7 +31,7 @@ document.addEventListener("keydown", gui.onKeyDown.bind(gui))
 canvas.addEventListener("wheel", gui.onWheel.bind(gui))
 
 game.drawGrid(board)
-paper.view.zoom = 5
+paper.view.zoom = 1
 paper.view.onFrame = game.onFrame.bind(game)
 
 gui.centerView()

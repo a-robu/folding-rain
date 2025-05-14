@@ -123,16 +123,17 @@ export class GUI {
         }
         else if (this.currentTool == "unfold") {
             let gridStart = this.board.paperToGridCoordinates(event.downPoint)
+            if (!this.board.isInBounds(gridStart) || !this.board.lattice.vertexIsClear(gridStart)) {
+                this.dragSquare.visible = false
+                return
+            }
+
             let gridRequestedEnd = this.board.paperToGridCoordinates(event.point)
             let gridEnd = snapToDiagonalOrAALine(gridStart, gridRequestedEnd)
     
             if (gridStart.equals(gridEnd)) {
                 this.dragSquare.visible = false
-                // dragLine.visible = false
-                // dragFirstTriangle.visible = false
-                // dragSecondTriangle.visible = false
                 this.lastGridDrag = null
-                // unfoldPlan = null
                 return
             }
 
@@ -146,29 +147,6 @@ export class GUI {
             this.dragSquare.add(this.board.gridToPaperCoordinates(triangulisation.end))
             this.dragSquare.add(this.board.gridToPaperCoordinates(triangulisation.hinges[1]))
             this.dragSquare.closed = true
-
-            // dragFirstTriangle.visible = true
-            // dragFirstTriangle.removeSegments()
-            // dragFirstTriangle.moveTo(board.gridToPaperCoordinates(triangulisation.start))
-            // dragFirstTriangle.lineTo(board.gridToPaperCoordinates(triangulisation.hinges[0]))
-            // dragFirstTriangle.lineTo(board.gridToPaperCoordinates(triangulisation.hinges[1]))
-            // dragFirstTriangle.closePath()
-    
-            // dragSecondTriangle.visible = true
-            // dragSecondTriangle.removeSegments()
-            // dragSecondTriangle.moveTo(board.gridToPaperCoordinates(triangulisation.hinges[0]))
-            // dragSecondTriangle.lineTo(board.gridToPaperCoordinates(triangulisation.hinges[1]))
-            // dragSecondTriangle.lineTo(board.gridToPaperCoordinates(triangulisation.end))
-            // dragSecondTriangle.closePath()
-    
-            // dragLine.visible = true
-            // dragLine.removeSegments()
-            // dragLine.moveTo(board.gridToPaperCoordinates(triangulisation.hinges[0]))
-            // dragLine.lineTo(board.gridToPaperCoordinates(triangulisation.hinges[1]))
-            // dragLine.strokeColor = new paper.Color(0.5, 0.5, 0.5)
-            // dragLine.strokeWidth = 2
-    
-            // unfoldPlan = triangulisation
         }
     }
 
@@ -212,11 +190,45 @@ export class GUI {
         // add a purple dot at the point matching the grid coordinate
         let gridPoint = this.board.paperToGridCoordinates(event.point)
         let snappedPoint = this.board.gridToPaperCoordinates(gridPoint)
-        let isInBounds = this.board.isInBounds(gridPoint)
-        this.gridSelectionDot.visible = isInBounds
-        if (isInBounds) {
-            this.gridSelectionDot.position = snappedPoint
+        this.gridSelectionDot.visible = false
+        if (!this.board.isInBounds(gridPoint)) {
+            return
         }
+        if (!this.board.lattice.vertexIsClear(gridPoint)) {
+            return
+        }
+        let wedges = this.board.all90DegWedges(gridPoint)
+        if (wedges.length == 0) {
+            return
+        }
+        let anyExpansions = false
+        for (let wedge of wedges) {
+            let expansions = this.board.allValidWedgeExpansions(gridPoint, wedge)
+            if (expansions.length > 0) {
+                anyExpansions = true
+            }
+        }
+        if (!anyExpansions) {
+            return
+        }
+        this.gridSelectionDot.position = snappedPoint
+        this.gridSelectionDot.visible = true
+
+//         let wedges = this.board.all90DegWedges(randomNode)
+    //         if (wedges.length == 0) {
+    //             continue
+    //         }
+    //         let randomWedge = randomChoice(wedges)
+    //         let unfoldPlans = this.board.allValidWedgeExpansions(randomNode, randomWedge)
+    //         if (unfoldPlans.length == 0) {
+    //             continue
+    //         }
+    //         rainDropPlan = randomChoice(unfoldPlans)
+    //     }
+    //     this.unfold(rainDropPlan);
+    // }
+
+           
     }
     
 }

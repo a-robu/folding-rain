@@ -22,7 +22,13 @@ export function snapToDiagonalOrAALine(start: paper.Point, end: paper.Point): pa
     return diagDirection.multiply(diagLength).add(start).round()
 }
 
-export function defineUnfoldFromBg(start: paper.Point, requestedEnd: paper.Point) {
+export type UnfoldPlan = {
+    start: paper.Point,
+    hinges: paper.Point[],
+    end: paper.Point
+}
+
+export function defineUnfoldFromBg(start: paper.Point, requestedEnd: paper.Point): UnfoldPlan {
     let delta = requestedEnd.subtract(start)
     let end = requestedEnd.clone()
     let hingeCorners: paper.Point[] = []

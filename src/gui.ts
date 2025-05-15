@@ -1,4 +1,4 @@
-import { defineUnfoldFromBg, snapToDiagonalOrAALine } from "./interact"
+import { createUnfoldPlan, makePathFromUnfoldPlan } from "./interact"
 import { Game } from "./game"
 import { Board } from "./board"
 import paper from "paper"
@@ -90,6 +90,14 @@ export class GUI {
         this.setTool("unfold")
     }
 
+    onPanButtonClick() {
+        this.setTool("pan")
+    }
+
+    onFoldButtonClick() {
+        this.setTool("unfold")
+    }
+
     private setTool(tool: ToolChoices) {
         this.currentTool = tool
         if (tool == "pan") {
@@ -143,14 +151,13 @@ export class GUI {
             let gridEnd = gridStart.add(nearestRay)
 
             this.lastGridDrag = [gridStart, gridEnd]
-            let triangulisation = defineUnfoldFromBg(gridStart, gridEnd)
+            let unfoldPlan = createUnfoldPlan(gridStart, gridEnd)
             this.dragSquare.visible = true
+            let polygon = makePathFromUnfoldPlan(unfoldPlan)
             this.dragSquare.removeSegments()
-            this.dragSquare.add(triangulisation.start)
-            this.dragSquare.add(triangulisation.hinges[0])
-            this.dragSquare.add(triangulisation.end)
-            this.dragSquare.add(triangulisation.hinges[1])
-            this.dragSquare.closed = true
+            for (let segment of polygon.segments) {
+                this.dragSquare.add(segment)
+            }
         }
     }
 
@@ -184,27 +191,27 @@ export class GUI {
                 return
             }
             let [gridStart, gridEnd] = this.lastGridDrag
-            let unfoldPlan = defineUnfoldFromBg(gridStart, gridEnd)
+            let unfoldPlan = createUnfoldPlan(gridStart, gridEnd)
             this.dragSquare.visible = false
             this.game.unfold(unfoldPlan)
             this.latticeVisualisation.removeChildren().map(child => {
                 child.remove()
             })
 
-            for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
-                let state = this.board.lattice.getState(triangleIndex)
-                // check if state is a number
-                if (typeof state !== "number") {
-                    continue
-                }
-                let path = this.board.lattice.makeTrianglePolygon(triangleIndex)
-                // path.position = path.position
-                // path.scale(this.board.gridIncrement)
-                path.fillColor = new paper.Color(1, 0, 1, 0.5)
-                path.visible = true
-                this.latticeVisualisation.addChild(path)
-                // this.latticeTriangles.push(path)
-            }
+            // for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
+            //     let state = this.board.lattice.getState(triangleIndex)
+            //     // check if state is a number
+            //     if (typeof state !== "number") {
+            //         continue
+            //     }
+            //     let path = this.board.lattice.makeTrianglePolygon(triangleIndex)
+            //     // path.position = path.position
+            //     // path.scale(this.board.gridIncrement)
+            //     path.fillColor = new paper.Color(1, 0, 1, 0.5)
+            //     path.visible = false
+            //     this.latticeVisualisation.addChild(path)
+            //     // this.latticeTriangles.push(path)
+            // }
 
             // for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
             //     let state = this.board.lattice.getState(triangleIndex)

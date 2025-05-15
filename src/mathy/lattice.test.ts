@@ -1,20 +1,21 @@
 import { describe, expect, test } from "vitest"
-import * as matchers from 'jest-extended';
-expect.extend(matchers);
-import paper from "paper";
+import * as matchers from "jest-extended"
+expect.extend(matchers)
+import paper from "paper"
 import { isCloseTo, Cell, Lattice, DIR, BKFG } from "./lattice"
+import { isCellCoordinate, isHalfIntegerVertex } from "./integers"
 
 describe("isCloseTo", () => {
     test("returns true for close values", () => {
-        expect(isCloseTo(1.0, 1.00001, 0.001)).toBe(true);
+        expect(isCloseTo(1.0, 1.00001, 0.001)).toBe(true)
     })
 
     test("returns false for distant values", () => {
-        expect(isCloseTo(1.0, 1.1, 0.001)).toBe(false);
+        expect(isCloseTo(1.0, 1.1, 0.001)).toBe(false)
     })
 
     test("returns true for equal values", () => {
-        expect(isCloseTo(1.0, 1.0, 0.001)).toBe(true);
+        expect(isCloseTo(1.0, 1.0, 0.001)).toBe(true)
     })
 })
 
@@ -37,33 +38,33 @@ describe("isCloseTo", () => {
 describe("Lattice", () => {
     describe("constructor", () => {
         test("makes a wide lattice", () => {
-            const lattice = new Lattice(2, 1);
-            expect(lattice.width).toBe(2);
-            expect(lattice.height).toBe(1);
+            const lattice = new Lattice(2, 1)
+            expect(lattice.width).toBe(2)
+            expect(lattice.height).toBe(1)
             // just see that it doesn't throw an error if we get a cell from the right
-            lattice.vertexNeighbors(new paper.Point(2, 0));
+            lattice.vertexNeighbors(new paper.Point(2, 0))
         })
 
         test("makes a tall lattice", () => {
-            const lattice = new Lattice(1, 2);
-            expect(lattice.width).toBe(1);
-            expect(lattice.height).toBe(2);
+            const lattice = new Lattice(1, 2)
+            expect(lattice.width).toBe(1)
+            expect(lattice.height).toBe(2)
             // just see that it doesn't throw an error if we get a cell from the right
-            lattice.vertexNeighbors(new paper.Point(0, 2));
+            lattice.vertexNeighbors(new paper.Point(0, 2))
         })
     })
 
     describe("allVertices", () => {
         test("returns the right vertices for a 1x1 lattice", () => {
-            const lattice = new Lattice(1, 1);
-            const vertices = lattice.allVertices();
+            const lattice = new Lattice(1, 1)
+            const vertices = lattice.allVertices()
             expect(vertices).toIncludeSameMembers([
                 new paper.Point(0, 0),
                 new paper.Point(1, 0),
                 new paper.Point(0, 1),
                 new paper.Point(1, 1),
                 new paper.Point(0.5, 0.5)
-            ]);
+            ])
         })
 
         test.each([
@@ -71,75 +72,159 @@ describe("Lattice", () => {
             [8, 2, 1],
             [13, 2, 2]
         ])("returns %s number of vertices for a %sx%s lattice", (expected, width, height) => {
-            const lattice = new Lattice(width, height);
-            const vertices = lattice.allVertices();
-            expect(vertices.length).toBe(expected);
+            const lattice = new Lattice(width, height)
+            const vertices = lattice.allVertices()
+            expect(vertices.length).toBe(expected)
         })
     })
 
     describe("isPerimeterVertex", () => {
         test("returns true (0, 0)", () => {
-            const lattice = new Lattice(1, 1);
-            expect(lattice.isPerimeterVertex(new paper.Point(0, 0))).toBe(true);
+            const lattice = new Lattice(1, 1)
+            expect(lattice.isPerimeterVertex(new paper.Point(0, 0))).toBe(true)
         })
 
         test("returns false (1, 1) in a 2x2 lattice", () => {
-            const lattice = new Lattice(2, 2);
-            expect(lattice.isPerimeterVertex(new paper.Point(1, 1))).toBe(false);
+            const lattice = new Lattice(2, 2)
+            expect(lattice.isPerimeterVertex(new paper.Point(1, 1))).toBe(false)
         })
     })
 
     describe("allTriangles", () => {
         test("returns the right triangles for a 1x1 lattice", () => {
-            const lattice = new Lattice(1, 1);
-            const triangles = lattice.allTriangleIndices();
+            const lattice = new Lattice(1, 1)
+            const triangles = lattice.allTriangleIndices()
             expect(triangles).toIncludeSameMembers([
                 { cell: new paper.Point(0, 0), cardinalDirection: "N" },
                 { cell: new paper.Point(0, 0), cardinalDirection: "E" },
                 { cell: new paper.Point(0, 0), cardinalDirection: "S" },
                 { cell: new paper.Point(0, 0), cardinalDirection: "W" }
-            ]);
+            ])
         })
 
         test("returns the right triangles for a 2x2 lattice", () => {
-            const lattice = new Lattice(2, 2);
-            const triangles = lattice.allTriangleIndices();
-            expect(triangles.length).toBe(16);
+            const lattice = new Lattice(2, 2)
+            const triangles = lattice.allTriangleIndices()
+            expect(triangles.length).toBe(16)
         })
     })
 
     describe("vertexNeighbors", () => {
-        let lattice = new Lattice(2, 2);
-        test("returns two states for the top-left corner", () => {
-            const neighbors = lattice.vertexNeighbors(new paper.Point(0, 0))
-            expect(neighbors).toIncludeSameMembers([
-                { cell: new paper.Point(0, 0), cardinalDirection: "N" },
-                { cell: new paper.Point(0, 0), cardinalDirection: "W" }
-            ])
-        })
-        test("returns 4 states for a middle vertex", () => {
-            const neighbors = lattice.vertexNeighbors(new paper.Point(0.5, 0.5))
-            expect(neighbors.length).toBe(4)
-            expect(neighbors).toIncludeSameMembers([
-                { cell: new paper.Point(0, 0), cardinalDirection: "N" },
-                { cell: new paper.Point(0, 0), cardinalDirection: "E" },
-                { cell: new paper.Point(0, 0), cardinalDirection: "S" },
-                { cell: new paper.Point(0, 0), cardinalDirection: "W" }
-            ])
-        })
-        test("returns 8 states for square corner vertex", () => {
-            const neighbors = lattice.vertexNeighbors(new paper.Point(1, 1))
-            expect(neighbors.length).toBe(8)
-            expect(neighbors).toIncludeSameMembers([
-                { cell: new paper.Point(0, 0), cardinalDirection: "S" },
-                { cell: new paper.Point(0, 0), cardinalDirection: "E" },
-                { cell: new paper.Point(1, 0), cardinalDirection: "W" },
-                { cell: new paper.Point(1, 0), cardinalDirection: "S" },
-                { cell: new paper.Point(1, 1), cardinalDirection: "N" },
-                { cell: new paper.Point(1, 1), cardinalDirection: "W" },
-                { cell: new paper.Point(0, 1), cardinalDirection: "E" },
-                { cell: new paper.Point(0, 1), cardinalDirection: "N" },
-            ])
+        let lattice = new Lattice(2, 2)
+        test.each([
+            {
+                description: "top-left corner",
+                point: new paper.Point(0, 0),
+                expected: [
+                    { cell: new paper.Point(0, 0), cardinalDirection: "N" },
+                    { cell: new paper.Point(0, 0), cardinalDirection: "W" }
+                ]
+            },
+            {
+                description: "bottom-left corner",
+                point: new paper.Point(0, 2),
+                expected: [
+                    { cell: new paper.Point(0, 1), cardinalDirection: "S" },
+                    { cell: new paper.Point(0, 1), cardinalDirection: "W" }
+                ]
+            },
+            {
+                description: "top-right corner",
+                point: new paper.Point(2, 0),
+                expected: [
+                    { cell: new paper.Point(1, 0), cardinalDirection: "E" },
+                    { cell: new paper.Point(1, 0), cardinalDirection: "N" }
+                ]
+            },
+            {
+                description: "bottom-right corner",
+                point: new paper.Point(2, 2),
+                expected: [
+                    { cell: new paper.Point(1, 1), cardinalDirection: "S" },
+                    { cell: new paper.Point(1, 1), cardinalDirection: "E" }
+                ]
+            },
+            {
+                description: "secondary-grid vertex",
+                point: new paper.Point(0.5, 0.5),
+                expected: [
+                    { cell: new paper.Point(0, 0), cardinalDirection: "N" },
+                    { cell: new paper.Point(0, 0), cardinalDirection: "E" },
+                    { cell: new paper.Point(0, 0), cardinalDirection: "S" },
+                    { cell: new paper.Point(0, 0), cardinalDirection: "W" }
+                ]
+            },
+            {
+                description: "top edge vertex",
+                point: new paper.Point(1, 0),
+                expected: [
+                    { cell: new paper.Point(0, 0), cardinalDirection: "N" },
+                    { cell: new paper.Point(0, 0), cardinalDirection: "E" },
+                    { cell: new paper.Point(1, 0), cardinalDirection: "W" },
+                    { cell: new paper.Point(1, 0), cardinalDirection: "N" }
+                ]
+            },
+            {
+                description: "left edge vertex",
+                point: new paper.Point(0, 1),
+                expected: [
+                    { cell: new paper.Point(0, 0), cardinalDirection: "S" },
+                    { cell: new paper.Point(0, 0), cardinalDirection: "W" },
+                    { cell: new paper.Point(0, 1), cardinalDirection: "N" },
+                    { cell: new paper.Point(0, 1), cardinalDirection: "W" }
+                ]
+            },
+            {
+                description: "bottom edge vertex",
+                point: new paper.Point(1, 2),
+                expected: [
+                    { cell: new paper.Point(0, 1), cardinalDirection: "S" },
+                    { cell: new paper.Point(0, 1), cardinalDirection: "E" },
+                    { cell: new paper.Point(1, 1), cardinalDirection: "W" },
+                    { cell: new paper.Point(1, 1), cardinalDirection: "S" }
+                ]
+            },
+            {
+                description: "right edge vertex",
+                point: new paper.Point(2, 1),
+                expected: [
+                    { cell: new paper.Point(1, 0), cardinalDirection: "S" },
+                    { cell: new paper.Point(1, 0), cardinalDirection: "E" },
+                    { cell: new paper.Point(1, 1), cardinalDirection: "N" },
+                    { cell: new paper.Point(1, 1), cardinalDirection: "E" }
+                ]
+            },
+            {
+                description: "primary-grid vertex",
+                point: new paper.Point(1, 1),
+                expected: [
+                    { cell: new paper.Point(1, 1), cardinalDirection: "N" },
+                    { cell: new paper.Point(1, 1), cardinalDirection: "W" },
+                    { cell: new paper.Point(0, 1), cardinalDirection: "N" },
+                    { cell: new paper.Point(0, 1), cardinalDirection: "E" },
+                    { cell: new paper.Point(0, 0), cardinalDirection: "S" },
+                    { cell: new paper.Point(0, 0), cardinalDirection: "E" },
+                    { cell: new paper.Point(1, 0), cardinalDirection: "W" },
+                    { cell: new paper.Point(1, 0), cardinalDirection: "S" }
+                ]
+            }
+        ])("of the $description", ({ point, expected }) => {
+            const neighbors = lattice.vertexNeighbors(point)
+            for (let neighbor of neighbors) {
+                expect(isCellCoordinate(neighbor.cell)).toBe(true)
+            }
+            expect(neighbors.length).toBe(expected.length)
+            // The error message provided by toIncludeSameMembers is terrible.
+            // So first check that each member in expected is in actual.
+            for (let expectedNeighbor of expected) {
+                expect(neighbors).toPartiallyContain(expectedNeighbor)
+            }
+            // Now, check that each member in actual is in expected.
+            for (let neighbor of neighbors) {
+                expect(expected).toPartiallyContain(neighbor)
+            }
+            // Now the actual assertion which should be redundant by now.
+            expect(neighbors).toIncludeSameMembers(expected)
         })
     })
 
@@ -151,8 +236,8 @@ describe("Lattice", () => {
             })
             // The N-side triangle is top-heavy, so the distance is 1/3 from
             // the top (and it only goes to the middle of the cell)
-            expect(centroid.x).toBeCloseTo(0.5, 2);
-            expect(centroid.y).toBeCloseTo(1/3 * 0.5, 2);
+            expect(centroid.x).toBeCloseTo(0.5, 2)
+            expect(centroid.y).toBeCloseTo((1 / 3) * 0.5, 2)
         })
     })
 

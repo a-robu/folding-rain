@@ -6,16 +6,6 @@ import paper from "paper"
 import { BKFG, DIR, Lattice } from "./mathy/lattice"
 
 describe("Board", () => {
-    // describe("gridToPaperCoordinates", () => {
-    //     test("converts grid point to paper coordinates", () => {
-    //         const board = new Board(10, 10)
-    //         const gridPoint = new paper.Point(2, 3)
-    //         const paperPoint = board.gridToPaperCoordinates(gridPoint)
-    //         expect(paperPoint.x).toBe(50) // 2 * 25
-    //         expect(paperPoint.y).toBe(75) // 3 * 25
-    //     })
-    // })
-
     describe("snapToNearestVertex", () => {
         test.each([
             [0.05, -0.03, 0, 0],
@@ -25,21 +15,63 @@ describe("Board", () => {
             let snapped = Board.snapToNearestVertex(new paper.Point(x, y))
             expect(snapped).toEqual(new paper.Point(expectedX, expectedY))
         })
-        // test("snaps to the nearest point (left)", () => {
-        //     const board = new Board(2, 0)
-        //     const paperPoint = new paper.Point(board.gridIncrement / 2 - 1, 0)
-        //     expect(board.paperToGridCoordinates(paperPoint)).toEqual(new paper.Point(0, 0))
-        // })
+    })
 
-        // test("snaps to the nearest point (right)", () => {
-        //     const board = new Board(2, 0)
-        //     const paperPoint = new paper.Point(board.gridIncrement / 2 + 1, 0)
-        //     expect(board.paperToGridCoordinates(paperPoint)).toEqual(new paper.Point(1, 0))
-        // })
+    describe("walkAlongLine", () => {
+        test("walks along a horizontal line", () => {
+            const start = new paper.Point(0, 0)
+            const end = new paper.Point(3, 0)
+            const points = Board.walkAlongLine(start, end)
+            expect(points).toEqual([
+                new paper.Point(0, 0),
+                new paper.Point(1, 0),
+                new paper.Point(2, 0),
+                new paper.Point(3, 0)
+            ])
+        })
 
-        // test("snaps to nearest point (grid center)", () => {
+        test("walks along a vertical line", () => {
+            const start = new paper.Point(0, 0)
+            const end = new paper.Point(0, 3)
+            const points = Board.walkAlongLine(start, end)
+            expect(points).toEqual([
+                new paper.Point(0, 0),
+                new paper.Point(0, 1),
+                new paper.Point(0, 2),
+                new paper.Point(0, 3)
+            ])
+        })
 
-        // })
+        test("walks along a diagonal line", () => {
+            const start = new paper.Point(0, 0)
+            const end = new paper.Point(2, 2)
+            const points = Board.walkAlongLine(start, end)
+            expect(points).toEqual([
+                new paper.Point(0, 0),
+                new paper.Point(0.5, 0.5),
+                new paper.Point(1, 1),
+                new paper.Point(1.5, 1.5),
+                new paper.Point(2, 2)
+            ])
+        })
+    })
+
+    describe("walkAlongPath", () => {
+        test("minimal example", () => {
+            const path = new paper.Path([
+                new paper.Point(0, 0),
+                new paper.Point(1, 0),
+                new paper.Point(0.5, 0.5),
+                new paper.Point(0, 1)
+            ])
+            const points = Board.walkAlongPath(path)
+            expect(points).toIncludeSameMembers([
+                new paper.Point(0, 0),
+                new paper.Point(1, 0),
+                new paper.Point(0.5, 0.5),
+                new paper.Point(0, 1)
+            ])
+        })
     })
 
     describe("isInBounds", () => {
@@ -50,73 +82,6 @@ describe("Board", () => {
             expect(board.vertexIsInBounds(new paper.Point(5, 11))).toBe(false) // Out of bounds (y)
             expect(board.vertexIsInBounds(new paper.Point(-1, 5))).toBe(false) // Negative x
             expect(board.vertexIsInBounds(new paper.Point(5, -1))).toBe(false) // Negative y
-        })
-    })
-
-    describe("getBgNodes", () => {
-        test("in a 1x1 grid, returns 4", () => {
-            const board = new Board(1, 1)
-            const bgNodes = board.getBgNodes()
-            expect(bgNodes.length).toBe(4)
-            expect(bgNodes).toIncludeSameMembers([
-                new paper.Point(0, 0),
-                new paper.Point(1, 0),
-                new paper.Point(0, 1),
-                new paper.Point(1, 1)
-            ])
-        })
-    })
-
-    describe("all90DegWedges", () => {
-        test("on a 2x2 grid, returns just one wedge", () => {
-            const board = new Board(2, 2)
-            const wedges = board.all90DegWedges(new paper.Point(0, 0))
-            expect(wedges.length).toBe(1)
-            expect(wedges[0]).toIncludeSameMembers([new paper.Point(0, 1), new paper.Point(1, 0)])
-        })
-
-        test("in the middle of a 5x5 grid, returns 8 wedges", () => {
-            const board = new Board(5, 5)
-            const wedges = board.all90DegWedges(new paper.Point(2, 2))
-            expect(wedges.length).toBe(8)
-        })
-    })
-
-    describe("allValidWedgeExpansions", () => {
-        test("returns two options in the corner of a 2x2 grid", () => {
-            const board = new Board(2, 2)
-            const apex = new paper.Point(0, 0)
-            const wedge: [paper.Point, paper.Point] = [new paper.Point(0, 1), new paper.Point(1, 0)]
-            const unfolds = board.allValidWedgeExpansions(apex, wedge)
-            expect(unfolds.length).toBe(2)
-            expect(unfolds[0].start).toEqual(apex)
-            expect(unfolds[0].hinges).toIncludeSameMembers([
-                new paper.Point(0, 1),
-                new paper.Point(1, 0)
-            ])
-            expect(unfolds[0].end).toEqual(new paper.Point(1, 1))
-            expect(unfolds[1].start).toEqual(apex)
-            expect(unfolds[1].hinges).toIncludeSameMembers([
-                new paper.Point(0, 2),
-                new paper.Point(2, 0)
-            ])
-            expect(unfolds[1].end).toEqual(new paper.Point(2, 2))
-        })
-
-        test("avoids unfolding over pre-existing shapes", () => {
-            const board = new Board(2, 2)
-            board.newShape(
-                new paper.Path([
-                    new paper.Point(1, 1),
-                    new paper.Point(1, 2),
-                    new paper.Point(2, 1),
-                    new paper.Point(2, 2)
-                ])
-            )
-            const apex = new paper.Point(0, 0)
-            const wedge: [paper.Point, paper.Point] = [new paper.Point(0, 1), new paper.Point(1, 0)]
-            const unfolds = board.allValidWedgeExpansions(apex, wedge)
-            expect(unfolds.length).toBe(1)
         })
     })
 

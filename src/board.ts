@@ -1,32 +1,15 @@
 import paper from "paper"
-import type { UnfoldPlan } from "./interact"
-import { BKFG, CardinalDirs, Lattice, snapPointToGridBasis, type CellState } from "./mathy/lattice"
+import { BKFG, Lattice, type CellState } from "./mathy/lattice"
+import {
+    forgivingCeil,
+    pointForgivingCeil,
+    pointForgivingFloor,
+    roundVertexToHalfIntegers
+} from "./mathy/integers"
 
 type Patch = {
     offset: paper.Point
     lattice: Lattice
-}
-
-function forgivingFloor(point: paper.Point): paper.Point {
-    const epsilon = 0.01
-    return new paper.Point(
-        Math.abs(point.x - Math.round(point.x)) < epsilon
-            ? Math.round(point.x)
-            : Math.floor(point.x),
-        Math.abs(point.y - Math.round(point.y)) < epsilon
-            ? Math.round(point.y)
-            : Math.floor(point.y)
-    )
-}
-
-function forgivingCeil(point: paper.Point): paper.Point {
-    const epsilon = 0.01
-    return new paper.Point(
-        Math.abs(point.x - Math.round(point.x)) < epsilon
-            ? Math.round(point.x)
-            : Math.ceil(point.x),
-        Math.abs(point.y - Math.round(point.y)) < epsilon ? Math.round(point.y) : Math.ceil(point.y)
-    )
 }
 
 export class Board {
@@ -63,7 +46,7 @@ export class Board {
         // with diagonal lines. That's nice, but now, we're returning numbers
         // like -0.999999999998 and that causes equality checks against integers
         // to fail.
-        return inOurSpace.multiply(2).round().multiply(0.5)
+        return roundVertexToHalfIntegers(inOurSpace)
     }
 
     /**
@@ -96,9 +79,9 @@ export class Board {
 
     vertexIsInBounds(gridPoint: paper.Point): boolean {
         return (
-            gridPoint.x >= 0.01 &&
+            gridPoint.x >= -0.01 &&
             gridPoint.x <= this.width + 0.01 &&
-            gridPoint.y >= 0.01 &&
+            gridPoint.y >= -0.01 &&
             gridPoint.y <= this.height + 0.01
         )
     }
@@ -183,8 +166,8 @@ export class Board {
 
     static rasterize(polygon: paper.Path): Patch {
         let originalBoundingBox = polygon.bounds
-        let topLeft = forgivingFloor(originalBoundingBox.topLeft)
-        let bottomRight = forgivingCeil(originalBoundingBox.bottomRight)
+        let topLeft = pointForgivingFloor(originalBoundingBox.topLeft)
+        let bottomRight = pointForgivingCeil(originalBoundingBox.bottomRight)
         // We assume the polygon is already aligned to the grid,
         // but still do a sanity check
         if ([topLeft.x, topLeft.y, bottomRight.x, bottomRight.y].some(p => p % 1 > 0.1)) {
@@ -225,6 +208,42 @@ export class Board {
         for (let state of detectedStates) {
             if (state != BKFG.Background) {
                 return false
+            }
+        }
+        return true
+    }
+
+    static walkAlongLine(start: paper.Point, end: paper.Point): paper.Point[] {
+        let points: paper.Point[] = []
+        let diff = end.subtract(start)
+        let stepSize = Math.abs(diff.x) < 0.1 || Math.abs(diff.y) < 0.1 ? 1 : Math.sqrt(2) / 2
+        let stepVector = diff.normalize().multiply(stepSize)
+        let steps = forgivingCeil(diff.length / stepSize)
+        for (let n = 0; n <= steps; n++) {
+            let point = roundVertexToHalfIntegers(start.add(stepVector.multiply(n)))
+            points.push(point)
+        }
+        return points
+    }
+
+    static walkAlongPath(polygon: paper.Path): paper.Point[] {
+        let points: paper.Point[] = []
+        let previousPoint = polygon.segments[polygon.segments.length - 1].point
+        for (let segment of polygon.segments) {
+            let pointsAlongLine = Board.walkAlongLine(previousPoint, segment.point)
+            points.push(...pointsAlongLine.slice(0, pointsAlongLine.length - 1))
+            previousPoint = segment.point
+        }
+        return points
+    }
+
+    perimeterIsClear(polygon: paper.Path): boolean {
+        let points = Board.walkAlongPath(polygon)
+        for (let point of points) {
+            for (let state of this.lattice.scanStatesAroundVertex(point)) {
+                if (typeof state === "number") {
+                    return false
+                }
             }
         }
         return true

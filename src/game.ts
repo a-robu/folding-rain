@@ -1,7 +1,7 @@
 import { easeOutBounce, cosineEase } from "./mathy/animation"
 import { getGridDiagonals } from "./mathy/diagonal-lines"
 import { Board } from "./board"
-import { defineUnfoldFromBg, unfoldPlanToPath, type UnfoldPlan } from "./interact"
+import { createUnfoldPlan, makePathFromUnfoldPlan, type UnfoldPlan } from "./interact"
 import paper from "paper"
 
 /**
@@ -25,7 +25,8 @@ class HingeProcess {
     endColor: paper.Color
     flap: paper.Path
     tip: paper.Segment
-    progress: number
+    t: number
+    duration: number
 
     constructor(
         start: paper.Point,
@@ -33,7 +34,8 @@ class HingeProcess {
         startColor: paper.Color,
         endColor: paper.Color,
         flap: paper.Path,
-        tip: paper.Segment
+        tip: paper.Segment,
+        duration: number
     ) {
         this.start = start
         this.end = end
@@ -41,7 +43,12 @@ class HingeProcess {
         this.endColor = endColor
         this.flap = flap
         this.tip = tip
-        this.progress = 0
+        this.t = 0
+        this.duration = duration
+    }
+
+    get progress() {
+        return this.t / this.duration
     }
 
     onFrame() {
@@ -60,6 +67,13 @@ class HingeProcess {
     }
 
     onDone() {}
+}
+
+/**
+ * Generates a random integer in the inclusive range [min, max].
+ */
+function randint(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
 export class Game {
@@ -83,7 +97,7 @@ export class Game {
 
         for (let i = 0; i < this.processes.length; i++) {
             let process = this.processes[i]
-            process.progress += event.delta
+            process.t += event.delta
             process.onFrame()
             if (process.progress > 1) {
                 process.onDone()
@@ -98,13 +112,16 @@ export class Game {
         for (let attempt = 0; attempt < 10; attempt++) {
             let startVertex = randomChoice(this.board.lattice.allVertices())
             let rays = Board.validSquareRays(startVertex)
-            let endVertex = startVertex.add(randomChoice(rays))
-            let unfoldPlan = defineUnfoldFromBg(startVertex, endVertex)
-            let newPolygon = unfoldPlanToPath(unfoldPlan)
+            let endVertex = startVertex.add(randomChoice(rays).multiply(randint(1, 10)))
+            let unfoldPlan = createUnfoldPlan(startVertex, endVertex)
+            let newPolygon = makePathFromUnfoldPlan(unfoldPlan)
             if (!this.board.pathInBounds(newPolygon)) {
                 continue
             }
             if (!this.board.pathClear(newPolygon)) {
+                continue
+            }
+            if (!this.board.perimeterIsClear(newPolygon)) {
                 continue
             }
             this.unfold(unfoldPlan)
@@ -113,7 +130,7 @@ export class Game {
     }
 
     onTick() {
-        if (Math.random() < 0.05) {
+        if (Math.random() < 1) {
             this.randomlyRainSomewhere()
         }
     }
@@ -140,7 +157,7 @@ export class Game {
         newSecondTriangle.add(plan.hinges[1])
         newSecondTriangle.closed = true
 
-        let newPolygon = unfoldPlanToPath(plan)
+        let newPolygon = makePathFromUnfoldPlan(plan)
         let newId = this.board.newShape(newPolygon)
         for (let triangle of this.latticeTriangles) {
             triangle.remove()
@@ -167,7 +184,8 @@ export class Game {
                 new paper.Color(1, 1, 1, 0.5),
                 new paper.Color(0, 0, 0, 0.5),
                 newSecondTriangle,
-                newSecondTriangle.segments[0]
+                newSecondTriangle.segments[0],
+                plan.end.subtract(plan.start).length
             )
         )
     }

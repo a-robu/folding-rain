@@ -1,22 +1,6 @@
 import paper from "paper"
-
-/**
- * Converts a number to its sign or 0 if it's close to zero (within 0.1).
- * @param value a number to snap
- * @returns -1, 0 or 1
- */
-export function snapToTrit(value: number): number {
-    if (value > 0.1) {
-        return 1
-    } else if (value < -0.1) {
-        return -1
-    }
-    return 0
-}
-
-export function snapPointToGridBasis(point: paper.Point): paper.Point {
-    return new paper.Point(snapToTrit(point.x), snapToTrit(point.y))
-}
+import { Board } from "../board"
+import { isCellCoordinate, isHalfIntegerVertex, snapPointToGridBasis } from "./integers"
 
 /**
  * Defines a Tetrakis square tiling and means of manipulating it.
@@ -225,6 +209,19 @@ export class Cell {
     // }
 }
 
+type subgrid = "corners" | "midpoints"
+
+function getVertexSubgrid(vertex: paper.Point): subgrid {
+    if (isCellCoordinate(vertex)) {
+        return "corners"
+    } else if (isHalfIntegerVertex(vertex)) {
+        return "midpoints"
+    }
+    throw new Error(
+        `Vertex (${vertex.x}, ${vertex.y}) is not a valid vertex of the lattice. It must be either a cell coordinate or a half-integer coordinate.`
+    )
+}
+
 /**
  * Represents the entire lattice of cells (made of individual cells arranged in a
  * square grid).
@@ -257,6 +254,11 @@ export class Lattice {
     }
 
     getState(triangleIndex: TriangleIndex): CellState {
+        if (!isCellCoordinate(triangleIndex.cell)) {
+            throw new Error(
+                `Cell coordinates must be integers, given (${triangleIndex.cell.x}, ${triangleIndex.cell.y})`
+            )
+        }
         const cell = this.cells[triangleIndex.cell.x][triangleIndex.cell.y]
         return cell.states.get(triangleIndex.cardinalDirection)!
     }
@@ -274,7 +276,7 @@ export class Lattice {
 
     vertexNeighbors(vertex: paper.Point): TriangleIndex[] {
         let neighbors: TriangleIndex[] = []
-        if (Math.abs(vertex.x % 0.5) < 0.1 && Math.abs(vertex.x % 1) > 0.1) {
+        if (getVertexSubgrid(vertex) === "midpoints") {
             // case of a vertex in the middle of the cell
             for (let dir of CardinalDirs) {
                 neighbors.push({
@@ -333,12 +335,34 @@ export class Lattice {
                 }
             }
         }
-        return neighbors
+        let snappedResults = neighbors.map(neighbor => ({
+            cell: neighbor.cell.round(),
+            cardinalDirection: neighbor.cardinalDirection
+        }))
+        for (let neighborIndex of snappedResults) {
+            // throw an error if any of them out of bounds
+            let cell = neighborIndex.cell
+            if (!(cell.x >= 0 && cell.x < this.width && cell.y >= 0 && cell.y < this.height)) {
+                throw new Error(
+                    `Failed to produce cell index within valid bounds (${cell.x}, ${cell.y})`
+                )
+            }
+        }
+        return snappedResults
+    }
+
+    scanStatesAroundVertex(vertex: paper.Point): CellState[] {
+        let states = new Set<CellState>()
+        for (let neighborIndex of this.vertexNeighbors(vertex)) {
+            let state = this.getState(neighborIndex)
+            states.add(state)
+        }
+        return Array.from(states)
     }
 
     vertexIsClear(vertex: paper.Point): boolean {
-        for (let neighborIndex of this.vertexNeighbors(vertex)) {
-            let state = this.getState(neighborIndex)
+        let states = this.scanStatesAroundVertex(vertex)
+        for (let state of states) {
             if (typeof state === "number") {
                 return false
             }

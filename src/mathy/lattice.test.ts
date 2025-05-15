@@ -2,8 +2,8 @@ import { describe, expect, test } from "vitest"
 import * as matchers from "jest-extended"
 expect.extend(matchers)
 import paper from "paper"
-import { isCloseTo, Cell, Lattice, DIR, BKFG } from "./lattice"
-import { isCellCoordinate, isHalfIntegerVertex } from "./integers"
+import { isCloseTo, Lattice, DIR, BKFG, type CellState, type CardinalDir } from "./lattice"
+import { isCellCoordinate } from "./integers"
 
 describe("isCloseTo", () => {
     test("returns true for close values", () => {
@@ -251,13 +251,19 @@ describe("Lattice", () => {
             let lattice = Lattice.rasterizePatch(new paper.Point(1, 1), polygon)
             expect(lattice.height).toEqual(1)
             expect(lattice.width).toEqual(1)
-            let expected = new Map([
+            for (let [dir, state] of [
                 [DIR.N, BKFG.Shape],
                 [DIR.E, null],
                 [DIR.S, null],
                 [DIR.W, null]
-            ])
-            expect(lattice.cells[0][0].states).toEqual(expected)
+            ] as [CardinalDir, CellState][]) {
+                expect(
+                    lattice.getState({
+                        cell: new paper.Point(0, 0),
+                        cardinalDirection: dir
+                    })
+                ).toEqual(state)
+            }
         })
     })
 })

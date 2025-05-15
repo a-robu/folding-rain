@@ -1,5 +1,4 @@
 import paper from "paper"
-import { Board } from "../board"
 import { isCellCoordinate, isHalfIntegerVertex, snapPointToGridBasis } from "./integers"
 
 /**
@@ -33,7 +32,7 @@ export const DIR = {
     S: "S",
     W: "W"
 } as const
-type CardinalDir = keyof typeof DIR
+export type CardinalDir = keyof typeof DIR
 export const CardinalDirs: CardinalDir[] = [DIR.N, DIR.E, DIR.S, DIR.W]
 
 /**

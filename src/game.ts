@@ -3,6 +3,7 @@ import { getGridDiagonals } from "./mathy/diagonal-lines"
 import { Board } from "./board"
 import { createUnfoldPlan, makePathFromUnfoldPlan, type UnfoldPlan } from "./interact"
 import paper from "paper"
+import randomColor from "randomcolor"
 
 /**
  * Pick one element at random from an array.
@@ -130,7 +131,7 @@ export class Game {
     }
 
     onTick() {
-        if (Math.random() < 1) {
+        if (Math.random() < 0.01) {
             this.randomlyRainSomewhere()
         }
     }
@@ -138,9 +139,15 @@ export class Game {
     latticeTriangles: paper.Path[] = []
 
     unfold(plan: UnfoldPlan) {
+        let ultimateColor = new paper.Color(
+            randomColor({
+                luminosity: "light"
+            })
+        )
+
         // draw the first triangle in black
         let newFirstTriangle = new paper.Path()
-        newFirstTriangle.fillColor = new paper.Color(0, 0, 0, 0.5)
+        newFirstTriangle.fillColor = ultimateColor
         // newFirstTriangle.strokeColor = new paper.Color(0, 0, 0, 0.5)
         // newFirstTriangle.strokeWidth = 0
         newFirstTriangle.add(plan.start)
@@ -149,8 +156,8 @@ export class Game {
         newFirstTriangle.closed = true
         // and draw the second triangle too, in white, but place the tip at start
         let newSecondTriangle = new paper.Path()
-        newSecondTriangle.fillColor = new paper.Color(1, 1, 1, 0.5)
-        // newSecondTriangle.strokeColor = new paper.Color(1, 1, 1, 0.5)
+        newSecondTriangle.fillColor = new paper.Color(1, 1, 1)
+        // newSecondTriangle.strokeColor = new paper.Color(1, 1, 1)
         // newSecondTriangle.strokeWidth = 0
         newSecondTriangle.add(plan.start)
         newSecondTriangle.add(plan.hinges[0])
@@ -158,7 +165,7 @@ export class Game {
         newSecondTriangle.closed = true
 
         let newPolygon = makePathFromUnfoldPlan(plan)
-        let newId = this.board.newShape(newPolygon)
+        /*let newId = */ this.board.newShape(newPolygon)
         for (let triangle of this.latticeTriangles) {
             triangle.remove()
         }
@@ -181,8 +188,8 @@ export class Game {
             new HingeProcess(
                 plan.start,
                 plan.end,
-                new paper.Color(1, 1, 1, 0.5),
-                new paper.Color(0, 0, 0, 0.5),
+                new paper.Color(1, 1, 1),
+                ultimateColor,
                 newSecondTriangle,
                 newSecondTriangle.segments[0],
                 plan.end.subtract(plan.start).length

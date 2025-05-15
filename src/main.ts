@@ -32,7 +32,7 @@ foldButton.addEventListener("click", gui.onFoldButtonClick.bind(gui))
 document.addEventListener("keydown", gui.onKeyDown.bind(gui))
 canvas.addEventListener("wheel", gui.onWheel.bind(gui))
 
-game.drawGrid(board)
+// game.drawGrid(board)
 paper.view.zoom = 50
 // paper.view.rotate(45)
 paper.view.onFrame = game.onFrame.bind(game)

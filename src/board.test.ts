@@ -3,7 +3,7 @@ import * as matchers from "jest-extended"
 expect.extend(matchers)
 import { Board } from "./board"
 import paper from "paper"
-import { BKFG, DIR, Lattice } from "./mathy/lattice"
+import { BKFG, DIR, Lattice, type CardinalDir, type CellState } from "./mathy/lattice"
 
 describe("Board", () => {
     describe("snapToNearestVertex", () => {
@@ -95,14 +95,19 @@ describe("Board", () => {
             let patch = Board.rasterize(polygon)
             expect(patch.lattice.height).toBe(1)
             expect(patch.lattice.width).toBe(1)
-            expect(patch.lattice.cells[0][0].states).toEqual(
-                new Map([
-                    [DIR.N, BKFG.Shape],
-                    [DIR.E, null],
-                    [DIR.S, null],
-                    [DIR.W, null]
-                ])
-            )
+            for (let [dir, state] of [
+                [DIR.N, BKFG.Shape],
+                [DIR.E, null],
+                [DIR.S, null],
+                [DIR.W, null]
+            ] as [CardinalDir, CellState][]) {
+                expect(
+                    patch.lattice.getState({
+                        cell: new paper.Point(0, 0),
+                        cardinalDirection: dir
+                    })
+                ).toEqual(state)
+            }
             expect(patch.offset).toEqual(new paper.Point(1, 0))
         })
     })
@@ -111,7 +116,13 @@ describe("Board", () => {
         test("applies correct number to lattice", () => {
             let board = new Board(1, 1)
             let justWLattice = new Lattice(1, 1)
-            justWLattice.cells[0][0].states.set(DIR.W, BKFG.Shape)
+            justWLattice.setState(
+                {
+                    cell: new paper.Point(0, 0),
+                    cardinalDirection: DIR.W
+                },
+                BKFG.Shape
+            )
             board.applyPatch(
                 {
                     offset: new paper.Point(0, 0),
@@ -119,13 +130,27 @@ describe("Board", () => {
                 },
                 1
             )
-            let actualCellState = board.lattice.cells[0][0].states
-            expect(actualCellState.get(DIR.N)).toEqual(BKFG.Background)
-            expect(actualCellState.get(DIR.E)).toEqual(BKFG.Background)
-            expect(actualCellState.get(DIR.S)).toEqual(BKFG.Background)
-            expect(actualCellState.get(DIR.W)).toEqual(1)
+            for (let [dir, state] of [
+                [DIR.N, BKFG.Background],
+                [DIR.E, BKFG.Background],
+                [DIR.S, BKFG.Background],
+                [DIR.W, 1]
+            ] as [CardinalDir, CellState][]) {
+                expect(
+                    board.lattice.getState({
+                        cell: new paper.Point(0, 0),
+                        cardinalDirection: dir
+                    })
+                ).toEqual(state)
+            }
             let justELattice = new Lattice(1, 1)
-            justELattice.cells[0][0].states.set(DIR.E, BKFG.Shape)
+            justELattice.setState(
+                {
+                    cell: new paper.Point(0, 0),
+                    cardinalDirection: DIR.E
+                },
+                BKFG.Shape
+            )
             board.applyPatch(
                 {
                     offset: new paper.Point(0, 0),
@@ -133,11 +158,19 @@ describe("Board", () => {
                 },
                 2
             )
-            actualCellState = board.lattice.cells[0][0].states
-            expect(actualCellState.get(DIR.N)).toEqual(BKFG.Background)
-            expect(actualCellState.get(DIR.E)).toEqual(2)
-            expect(actualCellState.get(DIR.S)).toEqual(BKFG.Background)
-            expect(actualCellState.get(DIR.W)).toEqual(1)
+            for (let [dir, state] of [
+                [DIR.N, BKFG.Background],
+                [DIR.E, 2],
+                [DIR.S, BKFG.Background],
+                [DIR.W, 1]
+            ] as [CardinalDir, CellState][]) {
+                expect(
+                    board.lattice.getState({
+                        cell: new paper.Point(0, 0),
+                        cardinalDirection: dir
+                    })
+                ).toEqual(state)
+            }
         })
     })
 })

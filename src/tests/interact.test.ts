@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import * as matchers from "jest-extended"
 expect.extend(matchers)
-import { createUnfoldPlan } from "./interact"
+import { createUnfoldPlan } from "@/interact"
 import paper from "paper"
 
 describe("defineUnfoldFromBg", () => {

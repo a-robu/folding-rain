@@ -61,3 +61,14 @@ export function isCellCoordinate(vertex: paper.Point) {
 export function isHalfIntegerVertex(vertex: paper.Point) {
     return Number.isInteger(vertex.x * 2) && Number.isInteger(vertex.y * 2)
 }
+
+/**
+ * Floating point number equality check with absolute tolerance.
+ * @param x
+ * @param target
+ * @param absTol - defaults to 0.1, appropriate to discriminate between lattice vertices
+ * @returns
+ */
+export function isCloseTo(x: number, target: number, absTol: number = 0.1) {
+    return Math.abs(x - target) < absTol
+}

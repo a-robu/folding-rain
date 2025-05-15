@@ -1,9 +1,10 @@
 import { describe, expect, test } from "vitest"
 import * as matchers from "jest-extended"
 expect.extend(matchers)
-import { Board } from "./board"
+import { Board } from "@/board"
 import paper from "paper"
-import { BKFG, DIR, Lattice, type CardinalDir, type CellState } from "./mathy/lattice"
+import { BKFG, DIR, type CardinalDir, type CellState } from "@/lib/cell"
+import { Lattice } from "@/lib/lattice"
 
 describe("Board", () => {
     describe("snapToNearestVertex", () => {
@@ -171,6 +172,25 @@ describe("Board", () => {
                     })
                 ).toEqual(state)
             }
+        })
+    })
+
+    describe("detectSideUnfold", () => {
+        test("unfolds the flap in a minimal example", () => {
+            let board = new Board(1, 1)
+            board.newShape(
+                new paper.Path([
+                    new paper.Point(0, 0),
+                    new paper.Point(1, 0),
+                    new paper.Point(0, 1)
+                ])
+            )
+            let unfoldPlan = board.detectSideUnfold([new paper.Point(1, 0), new paper.Point(0, 1)])
+            expect(unfoldPlan).toEqual({
+                start: new paper.Point(0, 0),
+                hinges: [new paper.Point(1, 0), new paper.Point(0, 1)],
+                end: new paper.Point(1, 1)
+            })
         })
     })
 })

@@ -1,11 +1,20 @@
 import paper from "paper"
-import { BKFG, Lattice, type CellState } from "./mathy/lattice"
+import { BKFG, type CellState } from "./lib/cell"
+import { Lattice } from "./lib/lattice"
 import {
     forgivingCeil,
     pointForgivingCeil,
     pointForgivingFloor,
     roundVertexToHalfIntegers
-} from "./mathy/integers"
+} from "./lib/integers"
+import {
+    createUnfoldPlan,
+    makePathFromUnfoldPlan,
+    reverseUnfoldPlan,
+    transposeUnfoldPlan,
+    unfoldPlanToTrangles,
+    type UnfoldPlan
+} from "./interact"
 
 type Patch = {
     offset: paper.Point
@@ -249,7 +258,7 @@ export class Board {
         return true
     }
 
-    scanStatesUnderPatch(patch: Patch): CellState[] {
+    scanStatesUnderPatch(patch: Patch): Set<CellState> {
         let detections = new Set<CellState>()
         for (let triangleIndex of patch.lattice.allTriangleIndices()) {
             let state = patch.lattice.getState(triangleIndex)
@@ -261,7 +270,7 @@ export class Board {
                 detections.add(readState)
             }
         }
-        return Array.from(detections)
+        return detections
     }
 
     /**
@@ -277,5 +286,60 @@ export class Board {
         let patch = Board.rasterize(copy)
         this.applyPatch(patch, id)
         return id
+    }
+
+    allShapesIds(): number[] {
+        return Array.from(this.shapes.keys())
+    }
+
+    getShapeEdges(id: number): [paper.Point, paper.Point][] {
+        let shape = this.shapes.get(id)
+        if (!shape) {
+            throw new Error(`Shape with ID ${id} not found`)
+        }
+        let edges: [paper.Point, paper.Point][] = []
+        for (let segment of shape.segments) {
+            let start = segment.point
+            let end = segment.next.point
+            edges.push([start, end])
+        }
+        return edges
+    }
+
+    // allShapeSides(): [paper.Point, paper.Point][] {
+    //     let sides: [paper.Point, paper.Point][] = []
+    //     for (let shape of this.shapes.values()) {
+    //         for (let segment of shape.segments) {
+    //             let start = segment.point
+    //             let end = segment.next.point
+    //             sides.push([start, end])
+    //         }
+    //     }
+    //     return sides
+    // }
+
+    detectSideUnfold(hinges: [paper.Point, paper.Point]): {
+        unfoldPlan: UnfoldPlan
+        shapeId: number
+    } | null {
+        let unfoldAttempt = transposeUnfoldPlan(createUnfoldPlan(hinges[0], hinges[1]))
+        let [side1, side2] = unfoldPlanToTrangles(unfoldAttempt)
+        let newPolygon = makePathFromUnfoldPlan(unfoldAttempt)
+        if (!this.pathInBounds(newPolygon)) {
+            return null
+        }
+
+        let statesUnderSide1 = this.scanStatesUnderPatch(Board.rasterize(side1))
+        let statesUnderSide2 = this.scanStatesUnderPatch(Board.rasterize(side2))
+        if (statesUnderSide1.size == 1 && statesUnderSide2.size == 1) {
+            let under1 = statesUnderSide1.values().next().value
+            let under2 = statesUnderSide2.values().next().value
+            if (typeof under1 == "number" && under2 == BKFG.Background) {
+                return { unfoldPlan: unfoldAttempt, shapeId: under1 }
+            } else if (typeof under2 == "number" && under1 == BKFG.Background) {
+                return { unfoldPlan: reverseUnfoldPlan(unfoldAttempt), shapeId: under2 }
+            }
+        }
+        return null
     }
 }

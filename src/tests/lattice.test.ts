@@ -2,8 +2,9 @@ import { describe, expect, test } from "vitest"
 import * as matchers from "jest-extended"
 expect.extend(matchers)
 import paper from "paper"
-import { isCloseTo, Lattice, DIR, BKFG, type CellState, type CardinalDir } from "./lattice"
-import { isCellCoordinate } from "./integers"
+import { DIR, BKFG, type CellState, type CardinalDir } from "@/lib/cell"
+import { Lattice } from "@/lib/lattice"
+import { isCloseTo, isCellCoordinate } from "@/lib/integers"
 
 describe("isCloseTo", () => {
     test("returns true for close values", () => {

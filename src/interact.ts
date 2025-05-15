@@ -1,5 +1,5 @@
 import paper from "paper"
-import { roundVertexToHalfIntegers } from "./mathy/integers"
+import { roundVertexToHalfIntegers } from "./lib/integers"
 
 export type UnfoldPlan = {
     start: paper.Point
@@ -24,6 +24,36 @@ export function createUnfoldPlan(start: paper.Point, end: paper.Point): UnfoldPl
         ],
         end: end
     }
+}
+
+export function transposeUnfoldPlan(plan: UnfoldPlan): UnfoldPlan {
+    return {
+        start: plan.hinges[0],
+        hinges: [plan.start, plan.end],
+        end: plan.hinges[1]
+    }
+}
+
+export function reverseUnfoldPlan(plan: UnfoldPlan): UnfoldPlan {
+    return {
+        start: plan.end,
+        hinges: plan.hinges,
+        end: plan.start
+    }
+}
+
+export function unfoldPlanToTrangles(plan: UnfoldPlan): [paper.Path, paper.Path] {
+    let flap1 = new paper.Path()
+    flap1.add(plan.start)
+    flap1.add(plan.hinges[0])
+    flap1.add(plan.hinges[1])
+    flap1.closed = true
+    let flap2 = new paper.Path()
+    flap2.add(plan.hinges[0])
+    flap2.add(plan.hinges[1])
+    flap2.add(plan.end)
+    flap2.closed = true
+    return [flap1, flap2]
 }
 
 export function makePathFromUnfoldPlan(plan: UnfoldPlan): paper.Path {

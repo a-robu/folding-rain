@@ -1,5 +1,5 @@
-import { easeOutBounce, cosineEase } from "./mathy/animation"
-import { getGridDiagonals } from "./mathy/diagonal-lines"
+import { easeOutBounce, cosineEase } from "./lib/animation"
+import { getGridDiagonals } from "./lib/diagonal-lines"
 import { Board } from "./board"
 import { createUnfoldPlan, makePathFromUnfoldPlan, type UnfoldPlan } from "./interact"
 import paper from "paper"
@@ -10,6 +10,27 @@ import randomColor from "randomcolor"
  */
 function randomChoice<T>(array: T[]): T {
     return array[Math.floor(array.length * Math.random())]
+}
+
+/**
+ * Pick one element at random from an array, using a probability distribution.
+ * @param array The array of elements to choose from.
+ * @param probabilities An array of probabilities corresponding to each element. Must sum to 1.
+ */
+function randomChoiceWeighted<T>(array: T[], probabilities: number[]): T {
+    if (array.length !== probabilities.length) {
+        throw new Error("Array and probabilities must have the same length")
+    }
+    let r = Math.random()
+    let cumulative = 0
+    for (let i = 0; i < array.length; i++) {
+        cumulative += probabilities[i]
+        if (r < cumulative) {
+            return array[i]
+        }
+    }
+    // Fallback in case of floating point error
+    return array[array.length - 1]
 }
 
 const GRID_LINES_COLOR = new paper.Color(0.95, 0.95, 0.95)
@@ -70,13 +91,6 @@ class HingeProcess {
     onDone() {}
 }
 
-/**
- * Generates a random integer in the inclusive range [min, max].
- */
-function randint(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
 export class Game {
     private processes: HingeProcess[] = []
     board: Board
@@ -113,7 +127,11 @@ export class Game {
         for (let attempt = 0; attempt < 10; attempt++) {
             let startVertex = randomChoice(this.board.lattice.allVertices())
             let rays = Board.validSquareRays(startVertex)
-            let endVertex = startVertex.add(randomChoice(rays).multiply(randint(1, 10)))
+            let rayLength = randomChoiceWeighted(
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                [0.15, 0.4, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+            )
+            let endVertex = startVertex.add(randomChoice(rays).multiply(rayLength))
             let unfoldPlan = createUnfoldPlan(startVertex, endVertex)
             let newPolygon = makePathFromUnfoldPlan(unfoldPlan)
             if (!this.board.pathInBounds(newPolygon)) {
@@ -126,13 +144,43 @@ export class Game {
                 continue
             }
             this.unfold(unfoldPlan)
-            return
+            break
+        }
+    }
+
+    randomlyUnfoldAFlap() {
+        for (let attempt = 0; attempt < 10; attempt++) {
+            let shapeIds = this.board.allShapesIds()
+            if (shapeIds.length == 0) {
+                continue
+            }
+            let id = randomChoice(shapeIds)
+            let edge = randomChoice(this.board.getShapeEdges(id))
+            let unfoldPlanAndId = this.board.detectSideUnfold(edge)
+            if (!unfoldPlanAndId) {
+                continue
+            }
+            let unfoldPlan = unfoldPlanAndId.unfoldPlan
+            let newPolygon = makePathFromUnfoldPlan(unfoldPlan)
+            if (!this.board.pathInBounds(newPolygon)) {
+                continue
+            }
+            // if (!this.board.pathClear(newPolygon)) {
+            //     continue
+            // }
+            console.log("Unfolding flap", unfoldPlan)
+            this.unfold(unfoldPlan)
         }
     }
 
     onTick() {
-        if (Math.random() < 0.01) {
+        // if (Math.random() < 0.01) {
+        if (Math.random() < 0.1) {
             this.randomlyRainSomewhere()
+        }
+        if (Math.random() < 0.3) {
+            // if (Math.random() < 0.03) {
+            this.randomlyUnfoldAFlap()
         }
     }
 

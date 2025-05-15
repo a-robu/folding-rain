@@ -2,7 +2,7 @@ import { createUnfoldPlan, makePathFromUnfoldPlan } from "./interact"
 import { Game } from "./game"
 import { Board } from "./board"
 import paper from "paper"
-import { selectNearestRay } from "./mathy/rays"
+import { selectNearestRay } from "./lib/rays"
 
 type ToolChoices = "pan" | "unfold"
 
@@ -118,7 +118,7 @@ export class GUI {
     }
 
     centerView() {
-        let bottomRightCorner = new paper.Point(this.board.width - 1, this.board.height - 1)
+        let bottomRightCorner = new paper.Point(this.board.width, this.board.height)
         this.view.center = bottomRightCorner.multiply(0.5)
     }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { selectNearestRay, distanceToRaySquared, lengthSquared } from "./rays"
+import { selectNearestRay, distanceToRaySquared, lengthSquared } from "@/lib/rays"
 import paper from "paper"
 
 describe("lengthSquared", () => {

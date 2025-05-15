@@ -99,7 +99,7 @@ export class Game {
     readonly tickInterval: number = 1 / 60
     auto: boolean
 
-    constructor(board: Board, gameLayer: paper.Layer, auto = false) {
+    constructor(board: Board, gameLayer: paper.Layer, auto = true) {
         this.board = board
         this.gameLayer = gameLayer
         this.auto = auto
@@ -177,14 +177,14 @@ export class Game {
 
     onTick() {
         if (this.auto) {
-            // if (Math.random() < 0.01) {
-            if (Math.random() < 0.1) {
+            if (Math.random() < 0.01) {
+                // if (Math.random() < 0.1) {
                 this.randomlyRainSomewhere()
             }
-            if (Math.random() < 0.3) {
-                // if (Math.random() < 0.03) {
-                this.randomlyUnfoldAFlap()
-            }
+            // if (Math.random() < 0.3) {
+            //     // if (Math.random() < 0.03) {
+            //     this.randomlyUnfoldAFlap()
+            // }
         }
     }
 

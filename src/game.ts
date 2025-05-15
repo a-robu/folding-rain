@@ -97,10 +97,12 @@ export class Game {
     gameLayer: paper.Layer
     lastTick: number = 0
     readonly tickInterval: number = 1 / 60
+    auto: boolean
 
-    constructor(board: Board, gameLayer: paper.Layer) {
+    constructor(board: Board, gameLayer: paper.Layer, auto = false) {
         this.board = board
         this.gameLayer = gameLayer
+        this.auto = auto
     }
 
     onFrame(event: paper.Event & { delta: number; time: number }) {
@@ -174,13 +176,15 @@ export class Game {
     }
 
     onTick() {
-        // if (Math.random() < 0.01) {
-        if (Math.random() < 0.1) {
-            this.randomlyRainSomewhere()
-        }
-        if (Math.random() < 0.3) {
-            // if (Math.random() < 0.03) {
-            this.randomlyUnfoldAFlap()
+        if (this.auto) {
+            // if (Math.random() < 0.01) {
+            if (Math.random() < 0.1) {
+                this.randomlyRainSomewhere()
+            }
+            if (Math.random() < 0.3) {
+                // if (Math.random() < 0.03) {
+                this.randomlyUnfoldAFlap()
+            }
         }
     }
 
@@ -245,18 +249,18 @@ export class Game {
         )
     }
 
-    drawGrid(board: Board) {
+    drawGrid(layer: paper.Layer) {
         let lines: [paper.Point, paper.Point][] = []
         // Horizontal lines
-        for (let y = 0; y <= board.height; y++) {
-            lines.push([new paper.Point(0, y), new paper.Point(board.width, y)])
+        for (let y = 0; y <= this.board.height; y++) {
+            lines.push([new paper.Point(0, y), new paper.Point(this.board.width, y)])
         }
         // Vertical lines
-        for (let x = 0; x <= board.width; x++) {
-            lines.push([new paper.Point(x, 0), new paper.Point(x, board.height)])
+        for (let x = 0; x <= this.board.width; x++) {
+            lines.push([new paper.Point(x, 0), new paper.Point(x, this.board.height)])
         }
         // Diagonal lines
-        for (let line of getGridDiagonals(board.width, board.height)) {
+        for (let line of getGridDiagonals(this.board.width, this.board.height)) {
             lines.push(line)
         }
         // Draw the lines
@@ -266,24 +270,24 @@ export class Game {
             path.lineTo(line[1])
             path.strokeColor = GRID_LINES_COLOR
             path.strokeWidth = GRID_LINES_WIDTH
-            this.gameLayer.addChild(path)
+            layer.addChild(path)
         }
         // Square corner dots
-        for (let x = 0; x <= board.width; x++) {
-            for (let y = 0; y <= board.height; y++) {
+        for (let x = 0; x <= this.board.width; x++) {
+            for (let y = 0; y <= this.board.height; y++) {
                 let gridPoint = new paper.Point(x, y)
                 let path = new paper.Path.Circle(gridPoint, GRID_DOTS_RADIUS)
                 path.fillColor = GRID_DOTS_COLOR
-                this.gameLayer.addChild(path)
+                layer.addChild(path)
             }
         }
         // Square center dots
-        for (let x = 0; x < board.width; x++) {
-            for (let y = 0; y < board.height; y++) {
+        for (let x = 0; x < this.board.width; x++) {
+            for (let y = 0; y < this.board.height; y++) {
                 let gridPoint = new paper.Point(x + 0.5, y + 0.5)
                 let path = new paper.Path.Circle(gridPoint, GRID_DOTS_RADIUS)
                 path.fillColor = GRID_DOTS_COLOR
-                this.gameLayer.addChild(path)
+                layer.addChild(path)
             }
         }
     }

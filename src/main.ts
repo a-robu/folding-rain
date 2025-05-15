@@ -11,7 +11,7 @@ gameLayer.name = "board"
 let uiLayer = new paper.Layer()
 uiLayer.name = "ui"
 
-let board = new Board(10, 10)
+let board = new Board(25, 25)
 let game = new Game(board, gameLayer)
 let guiTool = new paper.Tool()
 let panButton = document.getElementById("panButton")

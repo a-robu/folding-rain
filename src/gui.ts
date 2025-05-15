@@ -87,7 +87,7 @@ export class GUI {
 
         this.panButton = panButton
         this.foldButton = foldButton
-        this.setTool("unfold")
+        this.setTool("pan")
     }
 
     onPanButtonClick() {

@@ -1,5 +1,5 @@
 import paper from "paper"
-import { BKFG, type CellState } from "./lib/cell"
+import { BGFG, type CellState } from "./lib/cell"
 import { Lattice } from "./lib/lattice"
 import {
     forgivingCeil,
@@ -8,18 +8,18 @@ import {
     roundVertexToHalfIntegers
 } from "./lib/integers"
 import {
-    createUnfoldPlan,
+    createFold,
     makePathFromUnfoldPlan,
     reverseUnfoldPlan,
-    transposeUnfoldPlan,
+    transposeFoldPlan,
     unfoldPlanToTrangles,
-    type UnfoldPlan
-} from "./interact"
+    type FoldCoordinates
+} from "./lib/fold"
 
-type Patch = {
-    offset: paper.Point
-    lattice: Lattice
-}
+// type Patch = {
+//     offset: paper.Point
+//     lattice: Lattice
+// }
 
 export class Board {
     readonly width: number
@@ -35,7 +35,7 @@ export class Board {
     constructor(width: number, height: number) {
         this.width = width
         this.height = height
-        this.lattice = new Lattice(width, height, BKFG.Background)
+        this.lattice = new Lattice(width, height, BGFG.Background)
     }
 
     static snapToNearestVertex(point: paper.Point): paper.Point {
@@ -59,7 +59,8 @@ export class Board {
     }
 
     /**
-     * Returns the rays that can be used to generate valid squares (aligned to the lattice)
+     * Returns the rays that can be used to generate valid squares (aligned to the lattice).
+     * The ray sizes indicate the valid step size to take in the direction of the ray.
      * @param vertex - The vertex from which to generate the rays
      */
     static validSquareRays(vertex: paper.Point): paper.Point[] {
@@ -86,13 +87,13 @@ export class Board {
         return rotatedRays
     }
 
-    vertexIsInBounds(gridPoint: paper.Point): boolean {
-        return (
-            gridPoint.x >= -0.01 &&
-            gridPoint.x <= this.width + 0.01 &&
-            gridPoint.y >= -0.01 &&
-            gridPoint.y <= this.height + 0.01
-        )
+    // vertexIsInBounds(gridPoint: paper.Point): boolean {
+    //     return (
+    //         gridPoint.x >= -0.01 &&
+    //         gridPoint.x <= this.width + 0.01 &&
+    //         gridPoint.y >= -0.01 &&
+    //         gridPoint.y <= this.height + 0.01
+    //     )
     }
 
     // getBgNodes(): paper.Point[] {
@@ -173,38 +174,38 @@ export class Board {
     //     return unfoldPlans
     // }
 
-    static rasterize(polygon: paper.Path): Patch {
-        let originalBoundingBox = polygon.bounds
-        let topLeft = pointForgivingFloor(originalBoundingBox.topLeft)
-        let bottomRight = pointForgivingCeil(originalBoundingBox.bottomRight)
-        // We assume the polygon is already aligned to the grid,
-        // but still do a sanity check
-        if ([topLeft.x, topLeft.y, bottomRight.x, bottomRight.y].some(p => p % 1 > 0.1)) {
-            throw new Error("Polygon is not aligned to the grid")
-        }
-        let translatedPolygon = polygon.clone()
-        translatedPolygon.translate(topLeft.multiply(-1))
-        let patchSize = bottomRight.add(topLeft.multiply(-1))
-        return {
-            offset: topLeft,
-            lattice: Lattice.rasterizePatch(patchSize, translatedPolygon)
-        }
-    }
+    // static rasterize(polygon: paper.Path): Patch {
+    //     let originalBoundingBox = polygon.bounds
+    //     let topLeft = pointForgivingFloor(originalBoundingBox.topLeft)
+    //     let bottomRight = pointForgivingCeil(originalBoundingBox.bottomRight)
+    //     // We assume the polygon is already aligned to the grid,
+    //     // but still do a sanity check
+    //     if ([topLeft.x, topLeft.y, bottomRight.x, bottomRight.y].some(p => p % 1 > 0.1)) {
+    //         throw new Error("Polygon is not aligned to the grid")
+    //     }
+    //     let translatedPolygon = polygon.clone()
+    //     translatedPolygon.translate(topLeft.multiply(-1))
+    //     let patchSize = bottomRight.add(topLeft.multiply(-1))
+    //     return {
+    //         offset: topLeft,
+    //         lattice: Lattice.rasterizePatch(patchSize, translatedPolygon)
+    //     }
+    // }
 
-    applyPatch(patch: Patch, cellState: CellState) {
-        for (let triangleIndex of patch.lattice.allTriangleIndices()) {
-            let state = patch.lattice.getState(triangleIndex)
-            if (state == BKFG.Shape) {
-                this.lattice.setState(
-                    {
-                        cell: triangleIndex.cell.add(patch.offset),
-                        cardinalDirection: triangleIndex.cardinalDirection
-                    },
-                    cellState
-                )
-            }
-        }
-    }
+    // applyPatch(patch: Patch, cellState: CellState) {
+    //     for (let triangleIndex of patch.lattice.allTriangleIndices()) {
+    //         let state = patch.lattice.getState(triangleIndex)
+    //         if (state == BKFG.Shape) {
+    //             this.lattice.setState(
+    //                 {
+    //                     cell: triangleIndex.cell.add(patch.offset),
+    //                     cardinalDirection: triangleIndex.cardinalDirection
+    //                 },
+    //                 cellState
+    //             )
+    //         }
+    //     }
+    // }
 
     pathInBounds(polygon: paper.Path): boolean {
         return polygon.segments.every(segment => this.vertexIsInBounds(segment.point))
@@ -215,7 +216,7 @@ export class Board {
         let detectedStates = this.scanStatesUnderPatch(patch)
         // Check if the patch is clear
         for (let state of detectedStates) {
-            if (state != BKFG.Background) {
+            if (state != BGFG.Background) {
                 return false
             }
         }
@@ -258,20 +259,20 @@ export class Board {
         return true
     }
 
-    scanStatesUnderPatch(patch: Patch): Set<CellState> {
-        let detections = new Set<CellState>()
-        for (let triangleIndex of patch.lattice.allTriangleIndices()) {
-            let state = patch.lattice.getState(triangleIndex)
-            if (state == BKFG.Shape) {
-                let readState = this.lattice.getState({
-                    cell: triangleIndex.cell.add(patch.offset),
-                    cardinalDirection: triangleIndex.cardinalDirection
-                })
-                detections.add(readState)
-            }
-        }
-        return detections
-    }
+    // scanStatesUnderPatch(patch: Patch): Set<CellState> {
+    //     let detections = new Set<CellState>()
+    //     for (let triangleIndex of patch.lattice.allTriangleIndices()) {
+    //         let state = patch.lattice.getState(triangleIndex)
+    //         if (state == BKFG.Shape) {
+    //             let readState = this.lattice.getState({
+    //                 cell: triangleIndex.cell.add(patch.offset),
+    //                 cardinalDirection: triangleIndex.cardinalDirection
+    //             })
+    //             detections.add(readState)
+    //         }
+    //     }
+    //     return detections
+    // }
 
     /**
      * Creates a new shape on the board and returns its ID.
@@ -319,10 +320,10 @@ export class Board {
     // }
 
     detectSideUnfold(hinges: [paper.Point, paper.Point]): {
-        unfoldPlan: UnfoldPlan
+        unfoldPlan: FoldCoordinates
         shapeId: number
     } | null {
-        let unfoldAttempt = transposeUnfoldPlan(createUnfoldPlan(hinges[0], hinges[1]))
+        let unfoldAttempt = transposeFoldPlan(createFold(hinges[0], hinges[1]))
         let [side1, side2] = unfoldPlanToTrangles(unfoldAttempt)
         let newPolygon = makePathFromUnfoldPlan(unfoldAttempt)
         if (!this.pathInBounds(newPolygon)) {
@@ -334,9 +335,9 @@ export class Board {
         if (statesUnderSide1.size == 1 && statesUnderSide2.size == 1) {
             let under1 = statesUnderSide1.values().next().value
             let under2 = statesUnderSide2.values().next().value
-            if (typeof under1 == "number" && under2 == BKFG.Background) {
+            if (typeof under1 == "number" && under2 == BGFG.Background) {
                 return { unfoldPlan: unfoldAttempt, shapeId: under1 }
-            } else if (typeof under2 == "number" && under1 == BKFG.Background) {
+            } else if (typeof under2 == "number" && under1 == BGFG.Background) {
                 return { unfoldPlan: reverseUnfoldPlan(unfoldAttempt), shapeId: under2 }
             }
         }

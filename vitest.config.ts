@@ -8,7 +8,8 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            paper: "paper/dist/paper-core"
+            paper: "paper/dist/paper-core",
+            "@": path.resolve(__dirname, "src")
         }
     }
 })

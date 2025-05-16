@@ -44,23 +44,23 @@ export function pointForgivingFloor(point: paper.Point): paper.Point {
     )
 }
 
-export function pointForgivingCeil(point: paper.Point): paper.Point {
-    const epsilon = 0.01
-    return new paper.Point(
-        Math.abs(point.x - Math.round(point.x)) < epsilon
-            ? Math.round(point.x)
-            : Math.ceil(point.x),
-        Math.abs(point.y - Math.round(point.y)) < epsilon ? Math.round(point.y) : Math.ceil(point.y)
-    )
-}
+// export function pointForgivingCeil(point: paper.Point): paper.Point {
+//     const epsilon = 0.01
+//     return new paper.Point(
+//         Math.abs(point.x - Math.round(point.x)) < epsilon
+//             ? Math.round(point.x)
+//             : Math.ceil(point.x),
+//         Math.abs(point.y - Math.round(point.y)) < epsilon ? Math.round(point.y) : Math.ceil(point.y)
+//     )
+// }
 
-export function isCellCoordinate(vertex: paper.Point) {
-    return Number.isInteger(vertex.x) && Number.isInteger(vertex.y)
-}
+// export function isCellCoordinate(vertex: paper.Point) {
+//     return Number.isInteger(vertex.x) && Number.isInteger(vertex.y)
+// }
 
-export function isHalfIntegerVertex(vertex: paper.Point) {
-    return Number.isInteger(vertex.x * 2) && Number.isInteger(vertex.y * 2)
-}
+// export function isHalfIntegerVertex(vertex: paper.Point) {
+//     return Number.isInteger(vertex.x * 2) && Number.isInteger(vertex.y * 2)
+// }
 
 /**
  * Floating point number equality check with absolute tolerance.

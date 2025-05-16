@@ -3,7 +3,7 @@ import * as matchers from "jest-extended"
 expect.extend(matchers)
 import { Board } from "@/board"
 import paper from "paper"
-import { BKFG, DIR, type CardinalDir, type CellState } from "@/lib/cell"
+import { BGFG, DIR, type CardinalDir, type CellState } from "@/lib/cell"
 import { Lattice } from "@/lib/lattice"
 
 describe("Board", () => {
@@ -97,7 +97,7 @@ describe("Board", () => {
             expect(patch.lattice.height).toBe(1)
             expect(patch.lattice.width).toBe(1)
             for (let [dir, state] of [
-                [DIR.N, BKFG.Shape],
+                [DIR.N, BGFG.Shape],
                 [DIR.E, null],
                 [DIR.S, null],
                 [DIR.W, null]
@@ -122,7 +122,7 @@ describe("Board", () => {
                     cell: new paper.Point(0, 0),
                     cardinalDirection: DIR.W
                 },
-                BKFG.Shape
+                BGFG.Shape
             )
             board.applyPatch(
                 {
@@ -132,9 +132,9 @@ describe("Board", () => {
                 1
             )
             for (let [dir, state] of [
-                [DIR.N, BKFG.Background],
-                [DIR.E, BKFG.Background],
-                [DIR.S, BKFG.Background],
+                [DIR.N, BGFG.Background],
+                [DIR.E, BGFG.Background],
+                [DIR.S, BGFG.Background],
                 [DIR.W, 1]
             ] as [CardinalDir, CellState][]) {
                 expect(
@@ -150,7 +150,7 @@ describe("Board", () => {
                     cell: new paper.Point(0, 0),
                     cardinalDirection: DIR.E
                 },
-                BKFG.Shape
+                BGFG.Shape
             )
             board.applyPatch(
                 {
@@ -160,9 +160,9 @@ describe("Board", () => {
                 2
             )
             for (let [dir, state] of [
-                [DIR.N, BKFG.Background],
+                [DIR.N, BGFG.Background],
                 [DIR.E, 2],
-                [DIR.S, BKFG.Background],
+                [DIR.S, BGFG.Background],
                 [DIR.W, 1]
             ] as [CardinalDir, CellState][]) {
                 expect(

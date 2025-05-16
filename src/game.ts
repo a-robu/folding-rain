@@ -1,7 +1,7 @@
 import { easeOutBounce, cosineEase } from "./lib/animation"
 import { getGridDiagonals } from "./lib/diagonal-lines"
 import { Board } from "./board"
-import { createUnfoldPlan, makePathFromUnfoldPlan, type UnfoldPlan } from "./interact"
+import { createFold, makePathFromUnfoldPlan, type FoldCoordinates } from "./lib/fold"
 import paper from "paper"
 import randomColor from "randomcolor"
 
@@ -134,7 +134,7 @@ export class Game {
                 [0.15, 0.4, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
             )
             let endVertex = startVertex.add(randomChoice(rays).multiply(rayLength))
-            let unfoldPlan = createUnfoldPlan(startVertex, endVertex)
+            let unfoldPlan = createFold(startVertex, endVertex)
             let newPolygon = makePathFromUnfoldPlan(unfoldPlan)
             if (!this.board.pathInBounds(newPolygon)) {
                 continue
@@ -190,7 +190,7 @@ export class Game {
 
     latticeTriangles: paper.Path[] = []
 
-    unfold(plan: UnfoldPlan) {
+    unfold(plan: FoldCoordinates) {
         let ultimateColor = new paper.Color(
             randomColor({
                 luminosity: "light"

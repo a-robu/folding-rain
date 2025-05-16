@@ -1,7 +1,10 @@
 import paper from "paper"
-import { Board } from "../board"
-import { Game } from "../game"
-import { createUnfoldPlan } from "../interact"
+// import { Board } from "../board"
+// import { Game } from "../game"
+// import { VisualBoard } from "@/visual-board"
+import { VisualBoard } from "../visual-board"
+import { FOLD_COLORING, FoldCoordinates } from "../lib/fold"
+// import { createFold } from "../lib/fold"
 
 export default {
     title: "PaperJS"
@@ -21,30 +24,55 @@ function rigamarole(boardWidth = 7, boardHeight = 7, zoom = 50) {
     paper.setup(canvas)
 
     // Create the layers
-    let gridLinesLayer = new paper.Layer()
-    gridLinesLayer.name = "gridLines"
-    let gameLayer = new paper.Layer()
-    gameLayer.name = "board"
+    let shapesLayer = new paper.Layer()
+    shapesLayer.name = "Shapes"
+    let animationLayer = new paper.Layer()
+    animationLayer.name = "Animation"
 
-    // Create our objects
-    const board = new Board(boardWidth, boardHeight)
-    let game = new Game(board, gameLayer, false)
-    paper.view.onFrame = game.onFrame.bind(game)
+    // To catch intermediate path objects that are created
+    // for calculations only.
+    let trapLayer = new paper.Layer()
+    trapLayer.activate()
+    trapLayer.visible = false
+
+    let visualBoard = new VisualBoard(shapesLayer, animationLayer)
+
+    paper.view.onFrame = visualBoard.onFrame.bind(visualBoard)
+    // paper.view
 
     // Zoom in and center the view
     paper.view.zoom = zoom
-    let bottomRightCorner = new paper.Point(board.width, board.height)
+    let bottomRightCorner = new paper.Point(boardWidth, boardHeight)
     paper.view.center = bottomRightCorner.multiply(0.5)
 
     // Draw the grid lines
-    game.drawGrid(gridLinesLayer)
+    // game.drawGrid(gridLinesLayer)
 
-    return { container, game }
+    return { container, visualBoard }
 }
 
-export const MinimalBoard = () => {
-    let { container, game } = rigamarole(2, 2, 50)
-    let unfoldPlan = createUnfoldPlan(new paper.Point(1, 1), new paper.Point(2, 2))
-    game.unfold(unfoldPlan)
+export function triangleIn1x1Board() {
+    let { container, visualBoard } = rigamarole()
+    visualBoard.fold(
+        1,
+        FoldCoordinates.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1)),
+        FOLD_COLORING.Create
+    )
+
+    visualBoard.fold(
+        2,
+        FoldCoordinates.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4)),
+        FOLD_COLORING.Create
+    )
+
+    visualBoard.fold(
+        3,
+        FoldCoordinates.fromEndPoints(new paper.Point(2.5, 0.5), new paper.Point(2.5, 1.5)),
+        FOLD_COLORING.Create
+    )
+    // let { container, game } = rigamarole(1, 1, 50)
+    // let unfoldPlan = createFold(new paper.Point(0, 0), new paper.Point(1, 1))
+    // game.unfold(unfoldPlan)
     return container
 }
+triangleIn1x1Board.storyName = "One Triangle in a 1x1 Board"

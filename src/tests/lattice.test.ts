@@ -2,9 +2,9 @@ import { describe, expect, test } from "vitest"
 import * as matchers from "jest-extended"
 expect.extend(matchers)
 import paper from "paper"
-import { DIR, BKFG, type CellState, type CardinalDir } from "@/lib/cell"
+import { DIR, BGFG, type CellState, type CardinalDir } from "@/lib/cell"
 import { Lattice } from "@/lib/lattice"
-import { isCloseTo, isCellCoordinate } from "@/lib/integers"
+import { isCloseTo } from "@/lib/integers"
 
 describe("isCloseTo", () => {
     test("returns true for close values", () => {
@@ -253,7 +253,7 @@ describe("Lattice", () => {
             expect(lattice.height).toEqual(1)
             expect(lattice.width).toEqual(1)
             for (let [dir, state] of [
-                [DIR.N, BKFG.Shape],
+                [DIR.N, BGFG.Shape],
                 [DIR.E, null],
                 [DIR.S, null],
                 [DIR.W, null]
@@ -265,6 +265,44 @@ describe("Lattice", () => {
                     })
                 ).toEqual(state)
             }
+        })
+    })
+
+    describe("isVertexCoordinate", () => {
+        test.each([
+            {
+                expected: false,
+                x: 0.4,
+                y: 0.1,
+                description: "a point outside the lattice"
+            },
+            {
+                expected: false,
+                x: 0.5,
+                y: 0,
+                description: "a point on a horizontal square edge"
+            },
+            {
+                expected: false,
+                x: 4,
+                y: 2.5,
+                description: "point on a vertical square edge"
+            },
+            {
+                expected: true,
+                x: 1,
+                y: 3,
+                description: "a point on a square corner"
+            },
+            {
+                expected: true,
+                x: 2.5,
+                y: 9.5,
+                description: "a point on a square midpoint"
+            }
+        ])("returns %s for (%d, %d), %s", ({ expected, x, y }) => {
+            const result = Lattice.isVertexCoordinate(new paper.Point(x, y))
+            expect(result).toBe(expected)
         })
     })
 })

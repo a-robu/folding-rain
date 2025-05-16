@@ -1,6 +1,6 @@
 import paper from "paper"
-import { isCellCoordinate, isCloseTo, isHalfIntegerVertex, snapPointToGridBasis } from "./integers"
-import { BKFG, CardinalDirs, Cell, DIR, type CardinalDir, type CellState } from "./cell"
+import { isCloseTo, snapPointToGridBasis } from "./integers"
+import { BGFG, CardinalDirs, Cell, DIR, type CardinalDir, type CellState } from "./cell"
 
 /**
  * Defines a Tetrakis square tiling and means of manipulating it.
@@ -25,9 +25,9 @@ import { BKFG, CardinalDirs, Cell, DIR, type CardinalDir, type CellState } from 
 type subgrid = "corners" | "midpoints"
 
 function getVertexSubgrid(vertex: paper.Point): subgrid {
-    if (isCellCoordinate(vertex)) {
+    if (Lattice.isIntegerCoordinate(vertex)) {
         return "corners"
-    } else if (isHalfIntegerVertex(vertex)) {
+    } else if (Lattice.isVertexCoordinate(vertex)) {
         return "midpoints"
     }
     throw new Error(
@@ -38,6 +38,24 @@ function getVertexSubgrid(vertex: paper.Point): subgrid {
 type TriangleIndex = {
     cell: paper.Point
     cardinalDirection: CardinalDir
+}
+
+/**
+ * Error thrown when a vertex fails lattice validation.
+ */
+export class InvalidVertexError extends Error {
+    vertex: paper.Point
+
+    constructor(vertex: paper.Point, message: string) {
+        super(`Invalid (${vertex.x}, ${vertex.y}): ${message}`)
+        this.name = "InvalidVertexError"
+        this.vertex = vertex
+    }
+}
+
+type Patch = {
+    offset: paper.Point
+    lattice: Lattice
 }
 
 /**
@@ -261,25 +279,162 @@ export class Lattice {
     }
 
     /**
-     * Rasterize a polygon, creating a new lattice
-     * @param size - The size of the lattice to create
-     * @param polygon - The polygon to rasterize
-     * @returns A new Lattice object
+     * Detects if a vertex is within the bounds of the lattice. This assumes
+     * the input has valid half-integer coordinates. Behaviour is undefined otherwise.
      */
-    static rasterizePatch(size: paper.Point, polygon: paper.Path) {
-        let lattice = new Lattice(size.x, size.y, null)
-        for (let triangle of lattice.allTriangleIndices()) {
-            const centroid = Lattice.centroid(triangle)
-            if (polygon.contains(centroid)) {
-                lattice.cells[triangle.cell.x][triangle.cell.y].states.set(
-                    triangle.cardinalDirection,
-                    BKFG.Shape
-                )
-            }
-        }
-        return lattice
+    vertexIsInBounds(vertex: paper.Point): boolean {
+        return vertex.x >= 0 && vertex.x <= this.width && vertex.y >= 0 && vertex.y <= this.height
     }
 
+    assertVertex(vertex: paper.Point, error: string) {
+        if (!Lattice.isVertexCoordinate(vertex)) {
+            throw new InvalidVertexError(
+                vertex,
+                (error.length > 0 ? error + " :" : "") +
+                    "Coordinates must be half-integers on the Tetrakis lattice"
+            )
+        }
+        if (!this.vertexIsInBounds(vertex)) {
+            throw new InvalidVertexError(
+                vertex,
+                (error.length > 0 ? error + " :" : "") +
+                    "Coordinates must be within the bounds of the lattice"
+            )
+        }
+    }
+
+    // /**
+    //  * Creates a lattice the size of the given polygon
+    //  * and rasterizes the polygon onto it.
+    //  */
+    // static patchFromPolygon(polygon: paper.Path) {
+    //     for (let seg of polygon.segments) {
+    //         if (!Lattice.isVertexCoordinate(seg.point)) {
+    //             throw new Error(
+    //                 `Polygon has invalid vertex (i=${seg.index}): (${seg.point.x}, ${seg.point.y})`
+    //             )
+    //         }
+    //     }
+    //     let bounds = polygon.bounds
+    //     let topLeft = bounds.topLeft.floor()
+    //     let bottomRight = bounds.bottomRight.ceil()
+    //     let patchSize = bottomRight.subtract(topLeft)
+    //     let patch = new Lattice(patchSize.x, patchSize.y)
+    //     patch.rasterize(polygon, BKFG.Shape)
+    //     return {
+    //         offset: topLeft,
+    //         lattice: patch
+    //     }
+    // }
+
+    // /**
+    //  * Paint a polygon onto this lattice.
+    //  * @param polygon - The polygon to paint
+    //  * @param state - The state to apply under the polygon
+    //  */
+    // rasterize(polygon: paper.Path, state: CellState) {
+    //     // let lattice = new Lattice(size.x, size.y, null)
+    //     for (let triangle of this.allTriangleIndices()) {
+    //         const centroid = Lattice.centroid(triangle)
+    //         if (polygon.contains(centroid)) {
+    //             this.cells[triangle.cell.x][triangle.cell.y].states.set(
+    //                 triangle.cardinalDirection,
+    //                 state
+    //             )
+    //         }
+    //     }
+    // }
+
+    // applyPatch(patch: Patch, cellState: CellState) {
+    //     for (let triangleIndex of patch.lattice.allTriangleIndices()) {
+    //         let state = patch.lattice.getState(triangleIndex)
+    //         if (state == BKFG.Shape) {
+    //             this.lattice.setState(
+    //                 {
+    //                     cell: triangleIndex.cell.add(patch.offset),
+    //                     cardinalDirection: triangleIndex.cardinalDirection
+    //                 },
+    //                 cellState
+    //             )
+    //         }
+    //     }
+    // }
+
+    trianglesUnderPolygon(polygon: paper.Path): TriangleIndex[] {
+        for (let seg of polygon.segments) {
+            this.assertVertex(seg.point, `Polygon has invalid vertex (i=${seg.index})`)
+        }
+        let bounds = polygon.bounds
+        let topLeft = bounds.topLeft.floor()
+        let bottomRight = bounds.bottomRight.ceil()
+
+        let triangles: TriangleIndex[] = []
+
+        // Iterate over the cells in the bounding box of the polygon
+        for (let x = topLeft.x; x < bottomRight.x; x++) {
+            for (let y = topLeft.y; y < bottomRight.y; y++) {
+                for (let dir of CardinalDirs) {
+                    const triangleIndex = {
+                        cell: new paper.Point(x, y),
+                        cardinalDirection: dir
+                    }
+                    const centroid = Lattice.centroid(triangleIndex)
+                    if (polygon.contains(centroid)) {
+                        triangles.push(triangleIndex)
+                    }
+                }
+            }
+        }
+        return triangles
+    }
+
+    getStatesUnderPolygon(polygon: paper.Path): Set<CellState> {
+        let detections = new Set<CellState>()
+        for (let triangleIndex of this.trianglesUnderPolygon(polygon)) {
+            let state = this.getState(triangleIndex)
+            detections.add(state)
+        }
+        return detections
+    }
+
+    setStatesUnderPolygon(polygon: paper.Path, state: CellState) {
+        for (let triangleIndex of this.trianglesUnderPolygon(polygon)) {
+            this.setState(triangleIndex, state)
+        }
+    }
+
+    // rasterize(polygon: paper.Path, state: CellState) {
+    //     // let lattice = new Lattice(size.x, size.y, null)
+    //     for (let triangle of this.allTriangleIndices()) {
+    //         const centroid = Lattice.centroid(triangle)
+    //         if (polygon.contains(centroid)) {
+    //             this.cells[triangle.cell.x][triangle.cell.y].states.set(
+    //                 triangle.cardinalDirection,
+    //                 state
+    //             )
+    //         }
+    //     }
+    // }
+
+    // readStatesUnderPolygon(patch: Patch): Set<CellState> {
+
+    //     // let detections = new Set<CellState>()
+    //     // for (let triangleIndex of patch.lattice.allTriangleIndices()) {
+    //     //     let state = patch.lattice.getState(triangleIndex)
+    //     //     if (state == BKFG.Shape) {
+    //     //         let readState = this.lattice.getState({
+    //     //             cell: triangleIndex.cell.add(patch.offset),
+    //     //             cardinalDirection: triangleIndex.cardinalDirection
+    //     //         })
+    //     //         detections.add(readState)
+    //     //     }
+    //     // }
+    //     // return detections
+    // }
+
+    /**
+     * @returns the indices of all triangles in the lattice.
+     */
     allTriangleIndices() {
         let triangles: TriangleIndex[] = []
         for (let x = 0; x < this.width; x++) {
@@ -296,6 +451,9 @@ export class Lattice {
         return triangles
     }
 
+    /**
+     * @returns the centroid of a triangle in the lattice.
+     */
     static centroid(triangle: TriangleIndex) {
         // The centroid of any triangle is 2/3 of the way from the apex
         let distanceToCentroid = new paper.Point(0, (-2 / 3) * 0.5)
@@ -308,5 +466,49 @@ export class Lattice {
         }[triangle.cardinalDirection]
         let vectorToCentroid = distanceToCentroid.rotate(rotation, new paper.Point(0, 0))
         return triangle.cell.add(new paper.Point(0.5, 0.5)).add(vectorToCentroid)
+    }
+
+    /**
+     * Check if the coordinates are integers. Can be used both to check if
+     * the coordinates are valid cell indices or also if they lie along the
+     * square-corners part of the Tetrakis lattice. Does not check bounds.
+     */
+    static isIntegerCoordinate(vertex: paper.Point) {
+        return Number.isInteger(vertex.x) && Number.isInteger(vertex.y)
+    }
+
+    private static isHalfIntegerVertex(vertex: paper.Point) {
+        return Number.isInteger(vertex.x * 2) && Number.isInteger(vertex.y * 2)
+    }
+
+    /**
+     * Check if the coordinates are valid vertices on a Tetrakis square lattice.
+     * Does not check bounds.
+     */
+    static isVertexCoordinate(vertex: paper.Point): boolean {
+        // First check that they're not just any random numbers, but
+        // that the coordinates are half-integers (i.e. 0.5, 1.5, etc.)
+        if (!Lattice.isHalfIntegerVertex(vertex)) {
+            return false
+        }
+
+        // To make this easier to reason about, we divide the problem
+        // into two cases: either the vertex is on the corners of the
+        // squares or in the middle of the squares.
+
+        // First, the case where the vertex is on a square corner.
+        if (Lattice.isIntegerCoordinate(vertex)) {
+            // It lies along a corner, so it's valid.
+            return true
+        }
+
+        // Square midpoints have +0.5 in both coordinates. We've already
+        // checked that the coordinates are half-integers and that they
+        // are not BOTH integers. So the only condition that can fail
+        // this check is if one of the coordinates is an integer, which
+        // would mean that the vertex is on the side of a square.
+
+        // So now, veryify that the vertex is not on the side of a square.
+        return !Number.isInteger(vertex.x) && !Number.isInteger(vertex.y)
     }
 }

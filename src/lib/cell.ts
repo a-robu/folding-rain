@@ -51,11 +51,11 @@ export const CardinalDirs: CardinalDir[] = [DIR.N, DIR.E, DIR.S, DIR.W]
 //     ["/", [DIR.E, DIR.N, DIR.W, DIR.S],
 // ])
 
-export const BKFG = {
+export const BGFG = {
     Shape: "Shape",
     Background: "Background"
 } as const
-type BackgroundOrShape = keyof typeof BKFG
+type BackgroundOrShape = keyof typeof BGFG
 export type CellState = number | null | BackgroundOrShape
 
 /**

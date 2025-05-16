@@ -1,4 +1,4 @@
-import { createUnfoldPlan, makePathFromUnfoldPlan } from "./interact"
+import { createFold, makePathFromUnfoldPlan } from "./lib/fold"
 import { Game } from "./game"
 import { Board } from "./board"
 import paper from "paper"
@@ -151,7 +151,7 @@ export class GUI {
             let gridEnd = gridStart.add(nearestRay)
 
             this.lastGridDrag = [gridStart, gridEnd]
-            let unfoldPlan = createUnfoldPlan(gridStart, gridEnd)
+            let unfoldPlan = createFold(gridStart, gridEnd)
             this.dragSquare.visible = true
             let polygon = makePathFromUnfoldPlan(unfoldPlan)
             this.dragSquare.removeSegments()
@@ -191,7 +191,7 @@ export class GUI {
                 return
             }
             let [gridStart, gridEnd] = this.lastGridDrag
-            let unfoldPlan = createUnfoldPlan(gridStart, gridEnd)
+            let unfoldPlan = createFold(gridStart, gridEnd)
             this.dragSquare.visible = false
             this.game.unfold(unfoldPlan)
             this.latticeVisualisation.removeChildren().map(child => {

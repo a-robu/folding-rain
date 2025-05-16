@@ -1,6 +1,6 @@
 import paper from "paper"
 import { isCloseTo, snapPointToGridBasis } from "./integers"
-import { BGFG, CardinalDirs, Cell, DIR, type CardinalDir, type CellState } from "./cell"
+import { CELL_STATE, CardinalDirs, Cell, DIR, type CardinalDir, type CellState } from "./cell"
 
 /**
  * Defines a Tetrakis square tiling and means of manipulating it.

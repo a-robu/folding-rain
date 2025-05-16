@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import * as matchers from "jest-extended"
 expect.extend(matchers)
 import paper from "paper"
-import { DIR, BGFG, type CellState, type CardinalDir } from "@/lib/cell"
+import { DIR, CELL_STATE, type CellState, type CardinalDir } from "@/lib/cell"
 import { Lattice } from "@/lib/lattice"
 import { isCloseTo } from "@/lib/integers"
 
@@ -253,7 +253,7 @@ describe("Lattice", () => {
             expect(lattice.height).toEqual(1)
             expect(lattice.width).toEqual(1)
             for (let [dir, state] of [
-                [DIR.N, BGFG.Shape],
+                [DIR.N, CELL_STATE.Shape],
                 [DIR.E, null],
                 [DIR.S, null],
                 [DIR.W, null]

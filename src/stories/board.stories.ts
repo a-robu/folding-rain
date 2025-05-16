@@ -2,7 +2,7 @@ import paper from "paper"
 // import { Board } from "../board"
 // import { Game } from "../game"
 // import { VisualBoard } from "@/visual-board"
-import { VisualBoard } from "../visual-board"
+import { AnimatedBoard } from "../visual-board"
 import { FOLD_COLORING, FoldCoordinates } from "../lib/fold"
 // import { createFold } from "../lib/fold"
 
@@ -35,7 +35,7 @@ function rigamarole(boardWidth = 7, boardHeight = 7, zoom = 50) {
     trapLayer.activate()
     trapLayer.visible = false
 
-    let visualBoard = new VisualBoard(shapesLayer, animationLayer)
+    let visualBoard = new AnimatedBoard(shapesLayer, animationLayer)
 
     paper.view.onFrame = visualBoard.onFrame.bind(visualBoard)
     // paper.view
@@ -51,28 +51,113 @@ function rigamarole(boardWidth = 7, boardHeight = 7, zoom = 50) {
     return { container, visualBoard }
 }
 
-export function triangleIn1x1Board() {
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function exponentialDelay(ratePerSecond: number): number {
+    // λ = rate (events per second)
+    // Exponential distribution: -ln(U) / λ
+    const U = Math.random()
+    return (-Math.log(1 - U) / ratePerSecond) * 1000 // Convert to milliseconds
+}
+
+export function threeTriangles() {
     let { container, visualBoard } = rigamarole()
-    visualBoard.fold(
-        1,
-        FoldCoordinates.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1)),
-        FOLD_COLORING.Create
-    )
 
-    visualBoard.fold(
-        2,
-        FoldCoordinates.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4)),
-        FOLD_COLORING.Create
-    )
+    // let board = ...
 
-    visualBoard.fold(
-        3,
-        FoldCoordinates.fromEndPoints(new paper.Point(2.5, 0.5), new paper.Point(2.5, 1.5)),
-        FOLD_COLORING.Create
-    )
-    // let { container, game } = rigamarole(1, 1, 50)
-    // let unfoldPlan = createFold(new paper.Point(0, 0), new paper.Point(1, 1))
-    // game.unfold(unfoldPlan)
+    async function doFolds() {
+        // board.fold()
+        // board.onFold
+        // acquireLock
+        // lock.release()
+
+        visualBoard.fold(
+            1,
+            FoldCoordinates.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1)),
+            FOLD_COLORING.Create
+        )
+        await sleep(1000)
+
+        visualBoard.fold(
+            2,
+            FoldCoordinates.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4)),
+            FOLD_COLORING.Create
+        )
+        await sleep(1000)
+
+        visualBoard.fold(
+            3,
+            FoldCoordinates.fromEndPoints(new paper.Point(2.5, 0.5), new paper.Point(2.5, 1.5)),
+            FOLD_COLORING.Create
+        )
+    }
+
+    doFolds()
+
     return container
 }
-triangleIn1x1Board.storyName = "One Triangle in a 1x1 Board"
+
+export function rain() {
+    let { container, visualBoard } = rigamarole(20, 20, 20)
+
+    // let board = ...
+
+    async function doFolds() {
+        // board.fold()
+        // board.onFold
+        // acquireLock
+        // lock.release()
+
+        let i = 0
+
+        let choices = []
+
+        for (let x = 0; x < 20; x++) {
+            for (let y = 0; y < 20; y++) {
+                choices.push([x, y])
+            }
+        }
+
+        while (choices.length > 0) {
+            let index = Math.floor(Math.random() * choices.length)
+            let [x, y] = choices[index]
+            choices.splice(index, 1)
+
+            let topLeft = new paper.Point(x, y).multiply(2)
+            visualBoard.fold(
+                i,
+                FoldCoordinates.fromEndPoints(topLeft, topLeft.add(new paper.Point(1, 1))),
+                FOLD_COLORING.Create
+            )
+            await sleep(exponentialDelay(10))
+            // fold.onDone()
+            i++
+        }
+
+        // visualBoard.fold(
+        //     1,
+        //     FoldCoordinates.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1)),
+        //     FOLD_COLORING.Create
+        // )
+        // await sleep(1000)
+
+        // visualBoard.fold(
+        //     2,
+        //     FoldCoordinates.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4)),
+        //     FOLD_COLORING.Create
+        // )
+        // await sleep(1000)
+
+        // visualBoard.fold(
+        //     3,
+        //     FoldCoordinates.fromEndPoints(new paper.Point(2.5, 0.5), new paper.Point(2.5, 1.5)),
+        //     FOLD_COLORING.Create
+        // )
+    }
+
+    doFolds()
+
+    return container
+}

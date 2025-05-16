@@ -7,7 +7,7 @@ import {
     type FoldColoring,
     type FoldColoringChoice
 } from "./lib/fold"
-import { BGFG, type CellState } from "./lib/cell"
+import { CELL_STATE, type CellState } from "./lib/cell"
 import { cosineEase, easeOutBounce } from "./lib/animation"
 
 function pastel() {
@@ -77,7 +77,6 @@ class FoldAnimation {
         if (animatedProgress < 0.5) {
             this.flap.fillColor = this.brighten(this.frontColor, animatedProgress)
         } else {
-            this.flap.fillColor = this.backColor
             this.flap.fillColor = this.brighten(this.backColor, animatedProgress)
         }
     }
@@ -87,7 +86,7 @@ class FoldAnimation {
     }
 }
 
-export class VisualBoard {
+export class AnimatedBoard {
     private shapes: Map<number, paper.Path> = new Map()
     private shapesLayer: paper.Layer
     private animationLayer: paper.Layer
@@ -95,23 +94,13 @@ export class VisualBoard {
         animation: FoldAnimation
         callback: () => void
     }[] = []
-    private lastTick: number = 0
-    private readonly tickInterval: number = 1 / 60
 
     constructor(shapesLayer: paper.Layer, animationLayer: paper.Layer) {
         this.shapesLayer = shapesLayer
         this.animationLayer = animationLayer
     }
 
-    private onTick() {}
-
     onFrame(event: paper.Event & { delta: number; time: number }) {
-        // Check if the time since the last tick is greater than the tick interval
-        while (this.lastTick < event.time) {
-            this.lastTick += this.tickInterval
-            this.onTick()
-        }
-
         for (let i = 0; i < this.runningAnimations.length; i++) {
             let { animation, callback } = this.runningAnimations[i]
             animation.t += event.delta
@@ -127,10 +116,10 @@ export class VisualBoard {
     }
 
     private deriveFlapColor(shapeId: number, state: CellState) {
-        if (state == BGFG.Background) {
+        if (state == CELL_STATE.Background) {
             return new paper.Color(1, 1, 1)
         }
-        if (state == BGFG.Shape) {
+        if (state == CELL_STATE.Shape) {
             let shape = this.shapes.get(shapeId)
             if (!shape) {
                 throw new Error(`Shape with ID ${shapeId} does not exist`)
@@ -189,7 +178,10 @@ export class VisualBoard {
         if (colorTransition.after == null) {
             return
         }
-        if (colorTransition.before == BGFG.Shape && colorTransition.after == BGFG.Background) {
+        if (
+            colorTransition.before == CELL_STATE.Shape &&
+            colorTransition.after == CELL_STATE.Background
+        ) {
             // A triangle is being removed from a shape
             console.log("Removing triangle from shape with ID:", shapeId)
             let shape = this.shapes.get(shapeId)
@@ -214,8 +206,8 @@ export class VisualBoard {
                 this.shapesLayer.addChild(result)
             }
         } else if (
-            colorTransition.before == BGFG.Background &&
-            colorTransition.after == BGFG.Shape
+            colorTransition.before == CELL_STATE.Background &&
+            colorTransition.after == CELL_STATE.Shape
         ) {
             // A triangle is being added to a shape
             console.log("Adding triangle to shape with ID:", shapeId)

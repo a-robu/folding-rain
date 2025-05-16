@@ -1,7 +1,7 @@
 import paper from "paper"
 import { roundVertexToHalfIntegers } from "./integers"
 import { Lattice } from "./lattice"
-import { BGFG, type CellState } from "./cell"
+import { CELL_STATE, type CellState } from "./cell"
 
 export type CellTransition = {
     before: CellState
@@ -26,44 +26,44 @@ export const FOLD_COLORING_TEMPLATES: Record<FoldColoringChoice, FoldColoring> =
     [FOLD_COLORING.Create]: {
         // We start with background and add shape on both sides
         near: {
-            before: BGFG.Background,
-            after: BGFG.Shape
+            before: CELL_STATE.Background,
+            after: CELL_STATE.Shape
         },
         far: {
-            before: BGFG.Background,
-            after: BGFG.Shape
+            before: CELL_STATE.Background,
+            after: CELL_STATE.Shape
         }
     },
     [FOLD_COLORING.Remove]: {
         // We start with shape and add background on both sides
         near: {
-            before: BGFG.Shape,
-            after: BGFG.Background
+            before: CELL_STATE.Shape,
+            after: CELL_STATE.Background
         },
         far: {
-            before: BGFG.Shape,
-            after: BGFG.Background
+            before: CELL_STATE.Shape,
+            after: CELL_STATE.Background
         }
     },
     [FOLD_COLORING.Expand]: {
         // We keep the near-side shape and add background on the far side
         near: {
-            before: BGFG.Shape,
+            before: CELL_STATE.Shape,
             after: null
         },
         far: {
-            before: BGFG.Background,
-            after: BGFG.Shape
+            before: CELL_STATE.Background,
+            after: CELL_STATE.Shape
         }
     },
     [FOLD_COLORING.Contract]: {
         // We keep the far-side shape and add background on the near side
         near: {
-            before: BGFG.Shape,
-            after: BGFG.Background
+            before: CELL_STATE.Shape,
+            after: CELL_STATE.Background
         },
         far: {
-            before: BGFG.Shape,
+            before: CELL_STATE.Shape,
             after: null
         }
     }

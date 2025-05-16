@@ -1,5 +1,5 @@
 import paper from "paper"
-import { BGFG, type CellState } from "./lib/cell"
+import { CELL_STATE, type CellState } from "./lib/cell"
 import { Lattice } from "./lib/lattice"
 import {
     forgivingCeil,
@@ -35,7 +35,7 @@ export class Board {
     constructor(width: number, height: number) {
         this.width = width
         this.height = height
-        this.lattice = new Lattice(width, height, BGFG.Background)
+        this.lattice = new Lattice(width, height, CELL_STATE.Background)
     }
 
     static snapToNearestVertex(point: paper.Point): paper.Point {
@@ -216,7 +216,7 @@ export class Board {
         let detectedStates = this.scanStatesUnderPatch(patch)
         // Check if the patch is clear
         for (let state of detectedStates) {
-            if (state != BGFG.Background) {
+            if (state != CELL_STATE.Background) {
                 return false
             }
         }
@@ -335,9 +335,9 @@ export class Board {
         if (statesUnderSide1.size == 1 && statesUnderSide2.size == 1) {
             let under1 = statesUnderSide1.values().next().value
             let under2 = statesUnderSide2.values().next().value
-            if (typeof under1 == "number" && under2 == BGFG.Background) {
+            if (typeof under1 == "number" && under2 == CELL_STATE.Background) {
                 return { unfoldPlan: unfoldAttempt, shapeId: under1 }
-            } else if (typeof under2 == "number" && under1 == BGFG.Background) {
+            } else if (typeof under2 == "number" && under1 == CELL_STATE.Background) {
                 return { unfoldPlan: reverseUnfoldPlan(unfoldAttempt), shapeId: under2 }
             }
         }

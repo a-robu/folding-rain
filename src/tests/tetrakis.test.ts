@@ -7,13 +7,15 @@ import {
     isIntegerCoordinate,
     isHalfIntegerCoordinate,
     isOnTetrakisLattice,
-    roundToHalfIntegerCoordinate,
+    roundToHalfIntegers,
     allVertices,
     allTriangleIdxs,
     makeTrianglePolygon,
     squareDiagonalsFromVertex,
-    SIDE
+    SIDE,
+    areHalfCoversValid
 } from "@/lib/tetrakis"
+import { FOLD_COVER } from "@/lib/fold"
 
 describe("triangleIdxToKey / triangleIdxFromKey", () => {
     test("converts TriangleIdx to key and back", () => {
@@ -135,18 +137,42 @@ describe("isOnTetrakisLattice", () => {
 
 describe("roundToHalfIntegerCoordinate", () => {
     test("rounds to nearest half-integer coordinate (paper.Point)", () => {
-        expect(roundToHalfIntegerCoordinate(new paper.Point(1, 2))).toEqual(new paper.Point(1, 2))
-        expect(roundToHalfIntegerCoordinate(new paper.Point(0.5, 1.5))).toEqual(
-            new paper.Point(0.5, 1.5)
-        )
-        expect(roundToHalfIntegerCoordinate(new paper.Point(1.24, 2.26))).toEqual(
-            new paper.Point(1, 2.5)
-        )
-        expect(roundToHalfIntegerCoordinate(new paper.Point(1.24, 2.24))).toEqual(
-            new paper.Point(1, 2)
-        )
-        expect(roundToHalfIntegerCoordinate(new paper.Point(-1.26, -2.74))).toEqual(
+        expect(roundToHalfIntegers(new paper.Point(1, 2))).toEqual(new paper.Point(1, 2))
+        expect(roundToHalfIntegers(new paper.Point(0.5, 1.5))).toEqual(new paper.Point(0.5, 1.5))
+        expect(roundToHalfIntegers(new paper.Point(1.24, 2.26))).toEqual(new paper.Point(1, 2.5))
+        expect(roundToHalfIntegers(new paper.Point(1.24, 2.24))).toEqual(new paper.Point(1, 2))
+        expect(roundToHalfIntegers(new paper.Point(-1.26, -2.74))).toEqual(
             new paper.Point(-1.5, -2.5)
         )
+    })
+})
+
+describe("validFoldCovers", () => {
+    test("integer vertex, axis-aligned, even length", () => {
+        const covers = areHalfCoversValid(new paper.Point(0, 0), new paper.Point(2, 0))
+        expect(covers).toBe(true)
+    })
+    test("integer vertex, axis-aligned, odd length", () => {
+        const covers = areHalfCoversValid(new paper.Point(0, 0), new paper.Point(1, 0))
+        expect(covers).toBe(false)
+    })
+    test("integer vertex, diagonal", () => {
+        const covers = areHalfCoversValid(new paper.Point(0, 0), new paper.Point(1, 1))
+        expect(covers).toBe(true)
+    })
+    test("half-integer vertex, axis-aligned, even length", () => {
+        const covers = areHalfCoversValid(new paper.Point(0.5, 0.5), new paper.Point(2, 0))
+        expect(covers).toBe(true)
+    })
+    test("half-integer vertex, axis-aligned, odd length", () => {
+        const covers = areHalfCoversValid(new paper.Point(0.5, 0.5), new paper.Point(1, 0))
+        expect(covers).toBe(false)
+    })
+    test("half-integer vertex, diagonal", () => {
+        const covers = areHalfCoversValid(new paper.Point(0.5, 0.5), new paper.Point(1, 1))
+        expect(covers).toBe(true)
+    })
+    test("throws on invalid vertex", () => {
+        expect(() => areHalfCoversValid(new paper.Point(0.1, 0.1), new paper.Point(1, 0))).toThrow()
     })
 })

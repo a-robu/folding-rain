@@ -1,6 +1,6 @@
 import paper from "paper"
 import { AnimatedBoard } from "@/animated-board"
-import { FOLD_TYPE, FoldSpec } from "@/lib/fold"
+import { FOLD_ACTION, FoldSpec } from "@/lib/fold"
 import { sleep } from "@/lib/time"
 import { rigamarole } from "./rigamarole"
 
@@ -16,21 +16,21 @@ export function threeTriangles() {
         animatedBoard.fold(
             1,
             FoldSpec.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1)),
-            FOLD_TYPE.Create
+            FOLD_ACTION.Create
         )
         await sleep(1000)
 
         animatedBoard.fold(
             2,
             FoldSpec.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4)),
-            FOLD_TYPE.Create
+            FOLD_ACTION.Create
         )
         await sleep(1000)
 
         animatedBoard.fold(
             3,
             FoldSpec.fromEndPoints(new paper.Point(2.5, 0.5), new paper.Point(2.5, 1.5)),
-            FOLD_TYPE.Create
+            FOLD_ACTION.Create
         )
     }
 
@@ -39,14 +39,14 @@ export function threeTriangles() {
     return container
 }
 
-async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id) {
+async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id: number) {
     await animatedBoard.fold(
         id,
         FoldSpec.fromEndPoints(
             new paper.Point(center.x, center.y + 1),
             new paper.Point(center.x, center.y - 1)
         ),
-        FOLD_TYPE.Create
+        FOLD_ACTION.Create
     )
     let secondFolds = []
 
@@ -63,7 +63,7 @@ async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id)
                     new paper.Point(center.x, center.y),
                     new paper.Point(center.x + dx, center.y + dy)
                 ),
-                FOLD_TYPE.Expand
+                FOLD_ACTION.Expand
             )
         )
     }
@@ -85,7 +85,7 @@ async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id)
                     new paper.Point(center.x, center.y),
                     new paper.Point(center.x + dx, center.y + dy)
                 ),
-                FOLD_TYPE.Expand
+                FOLD_ACTION.Expand
             )
         )
     }

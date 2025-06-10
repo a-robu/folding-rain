@@ -1,4 +1,5 @@
 import paper from "paper"
+import { FOLD_COVER, type FoldCover } from "./fold"
 
 export const SIDE = {
     N: "N",
@@ -76,7 +77,7 @@ export function isOnTetrakisLattice(point: paper.Point): boolean {
     return !Number.isInteger(point.x) && !Number.isInteger(point.y)
 }
 
-export function roundToHalfIntegerCoordinate(point: paper.Point): paper.Point {
+export function roundToHalfIntegers(point: paper.Point): paper.Point {
     let result = point.multiply(2).round().divide(2)
     // Fix weird -0.0 values using Object.is
     if (Object.is(result.x, -0)) {
@@ -172,11 +173,11 @@ export function makeTrianglePolygon(triangleIdx: TriangleIdx): paper.Path {
  */
 export function squareDiagonalsFromVertex(vertex: paper.Point): paper.Point[] {
     let templateRays: paper.Point[] = []
-    if (vertex.x % 1 == 0 && vertex.y % 1 == 0) {
+    if (isIntegerCoordinate(vertex)) {
         // Case where the vertices are along the (0, 0) subgrid
         templateRays.push(new paper.Point(2, 0))
         templateRays.push(new paper.Point(1, 1))
-    } else if (vertex.x % 0.5 == 0 && vertex.y % 0.5 == 0) {
+    } else if (isOnTetrakisLattice(vertex)) {
         // Case where the vertices are along the (.5, .5) subgrid
         templateRays.push(new paper.Point(1, 0))
     } else {
@@ -188,8 +189,46 @@ export function squareDiagonalsFromVertex(vertex: paper.Point): paper.Point[] {
     // So we can produce the remaining rays by rotating the template rays.
     for (let angle of [0, 90, 180, 270]) {
         for (let ray of templateRays) {
-            rotatedRays.push(roundToHalfIntegerCoordinate(ray.rotate(angle, new paper.Point(0, 0))))
+            rotatedRays.push(roundToHalfIntegers(ray.rotate(angle, new paper.Point(0, 0))))
         }
     }
     return rotatedRays
+}
+
+export function areHalfCoversValid(vertex: paper.Point, ray: paper.Point) {
+    // Cases:
+    // If the vertex is on the corners of the squares
+    //   AND the ray is axis aligned
+    //     AND the length of the ray is divisible by 2, then the half covers are valid.
+    //     OTHERWISE, only the full cover is valid.
+    //   AND the ray is diagonal, all covers are valid
+    // If the vertex is in the middle of the squares
+    //   AND the ray is axis aligned
+    //     AND the length of the ray is divisible by 2, then the half covers are valid.
+    //     OTHERWISE, only the full cover is valid.
+    //   AND the ray is diagonal, all covers are valid
+    let isAxisAligned = ray.x == 0 || ray.y == 0
+    let halfCoversAreValid = false
+    if (isIntegerCoordinate(vertex)) {
+        // Vertex is on the corners of the squares
+        if (isAxisAligned) {
+            if (ray.length % 2 == 0) {
+                halfCoversAreValid = true
+            }
+        } else {
+            halfCoversAreValid = true
+        }
+    } else if (isOnTetrakisLattice(vertex)) {
+        // Vertex is in the middle of the squares
+        if (isAxisAligned) {
+            if (ray.length % 2 == 0) {
+                halfCoversAreValid = true
+            }
+        } else {
+            halfCoversAreValid = true
+        }
+    } else {
+        throw new Error(`Invalid vertex provided (${vertex.x}, ${vertex.y})`)
+    }
+    return halfCoversAreValid
 }

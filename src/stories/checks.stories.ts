@@ -1,5 +1,5 @@
 import paper from "paper"
-import { FOLD_TYPE, FoldSpec } from "@/lib/fold"
+import { FOLD_ACTION, FoldSpec } from "@/lib/fold"
 import { rigamarole } from "./rigamarole"
 import { allTriangleIdxs, allVertices, makeTrianglePolygon } from "@/lib/tetrakis"
 import { sleep } from "@/lib/time"
@@ -58,7 +58,7 @@ export function latticeTrianglesAndPoints() {
         await animatedBoard.fold(
             1,
             FoldSpec.fromEndPoints(new paper.Point(1, 1), new paper.Point(3, 3)),
-            FOLD_TYPE.Create
+            FOLD_ACTION.Create
         )
     }
     animate()

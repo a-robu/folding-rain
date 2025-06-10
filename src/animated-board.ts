@@ -1,7 +1,7 @@
 import paper from "paper"
 import {
     type FoldTemplate,
-    type FoldType,
+    type FoldAction,
     type ShapeChange,
     FOLD_TEMPLATES,
     FoldSpec,
@@ -15,8 +15,8 @@ class FoldAnimation {
     flap: paper.Path
     tip: paper.Segment
     apexTrajectory: paper.Path
-    frontColor: paper.Color
-    backColor: paper.Color
+    initialColor: paper.Color
+    subsequentColor: paper.Color
     t: number
     duration: number
 
@@ -24,15 +24,15 @@ class FoldAnimation {
         flap: paper.Path,
         tip: paper.Segment,
         apexTrajectory: paper.Path,
-        frontColor: paper.Color,
-        backColor: paper.Color,
+        initialColor: paper.Color,
+        subsequentColor: paper.Color,
         duration: number
     ) {
         this.flap = flap
         this.tip = tip
         this.apexTrajectory = apexTrajectory
-        this.frontColor = frontColor
-        this.backColor = backColor
+        this.initialColor = initialColor
+        this.subsequentColor = subsequentColor
         this.t = 0
         this.duration = duration
     }
@@ -66,9 +66,9 @@ class FoldAnimation {
             this.apexTrajectory.length * animatedProgress
         )
         if (animatedProgress < 0.5) {
-            this.flap.fillColor = this.brighten(this.frontColor, animatedProgress)
+            this.flap.fillColor = this.brighten(this.initialColor, animatedProgress)
         } else {
-            this.flap.fillColor = this.brighten(this.backColor, animatedProgress)
+            this.flap.fillColor = this.brighten(this.subsequentColor, animatedProgress)
         }
     }
 
@@ -116,26 +116,28 @@ export class AnimatedBoard {
         }
     }
 
-    private determineFlapColor(shapeId: number, shapeChange: ShapeChange) {
-        if (shapeChange == SHAPE_CHANGE.Remove) {
-            return new paper.Color(1, 1, 1)
+    private determineFlapColors(shapeId: number, shapeChange: ShapeChange) {
+        let shape = this.shapes.get(shapeId)
+        if (!shape) {
+            throw new Error(`Shape with ID ${shapeId} does not exist`)
         }
-        if (shapeChange == SHAPE_CHANGE.Add || shapeChange == SHAPE_CHANGE.Keep) {
-            let shape = this.shapes.get(shapeId)
-            if (!shape) {
-                throw new Error(`Shape with ID ${shapeId} does not exist`)
-            }
-            if (shape.fillColor == null) {
-                throw new Error(`Shape with ID ${shapeId} has no fill color`)
-            }
-            return shape.fillColor
+        if (shape.fillColor == null) {
+            throw new Error(`Shape with ID ${shapeId} has no fill color`)
+        }
+        if (shapeChange == SHAPE_CHANGE.Remove) {
+            return [shape.fillColor, new paper.Color(1, 1, 1)]
+        }
+        if (shapeChange == SHAPE_CHANGE.Add) {
+            return [new paper.Color(1, 1, 1), shape.fillColor]
+        } else if (shapeChange == SHAPE_CHANGE.Keep) {
+            return [shape.fillColor, shape.fillColor]
         }
         throw new Error("Invalid state")
     }
 
-    async fold(shapeId: number, foldSpec: FoldSpec, foldType: FoldType) {
+    async fold(shapeId: number, foldSpec: FoldSpec, foldAction: FoldAction) {
         let triangles = foldSpec.toTriangles()
-        let template = FOLD_TEMPLATES[foldType]
+        let template = FOLD_TEMPLATES[foldAction]
         this.applyTriangleUpdate(shapeId, triangles.near, template.near)
         await this.animateFlap(shapeId, foldSpec, template, () =>
             this.applyTriangleUpdate(shapeId, triangles.far, template.far)
@@ -149,8 +151,10 @@ export class AnimatedBoard {
         onAnimationDone = () => {}
     ): Promise<void> {
         return new Promise(resolve => {
-            let frontColor = this.determineFlapColor(shapeId, foldTemplate.near)
-            let backColor = this.determineFlapColor(shapeId, foldTemplate.far)
+            let [initiallyVisible, subsequentlyVisible] = this.determineFlapColors(
+                shapeId,
+                foldTemplate.near
+            )
             let flap = foldSpec.toTriangles().near.clone()
             this.animationLayer.addChild(flap)
             this.runningAnimations.push({
@@ -158,8 +162,8 @@ export class AnimatedBoard {
                     flap,
                     flap.segments[FoldSpec.triangleApexIndex],
                     new paper.Path([foldSpec.start, foldSpec.end]),
-                    frontColor,
-                    backColor,
+                    initiallyVisible,
+                    subsequentlyVisible,
                     foldSpec.start.getDistance(foldSpec.end)
                 ),
                 finalizeAnimation: () => {

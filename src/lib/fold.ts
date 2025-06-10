@@ -1,5 +1,5 @@
 import paper from "paper"
-import { isOnTetrakisLattice, roundToHalfIntegerCoordinate } from "./tetrakis"
+import { isOnTetrakisLattice, roundToHalfIntegers } from "./tetrakis"
 
 export const SHAPE_CHANGE = {
     Add: "Add",
@@ -13,33 +13,40 @@ export type FoldTemplate = {
     far: ShapeChange
 }
 
-export const FOLD_TYPE = {
+export const FOLD_ACTION = {
     Create: "Create",
     Remove: "Remove",
     Expand: "Expand",
     Contract: "Contract"
 } as const
+export type FoldAction = keyof typeof FOLD_ACTION
 
-export type FoldType = keyof typeof FOLD_TYPE
-
-export const FOLD_TEMPLATES: Record<FoldType, FoldTemplate> = {
-    [FOLD_TYPE.Create]: {
+export const FOLD_TEMPLATES: Record<FoldAction, FoldTemplate> = {
+    [FOLD_ACTION.Create]: {
         near: SHAPE_CHANGE.Add,
         far: SHAPE_CHANGE.Add
     },
-    [FOLD_TYPE.Remove]: {
+    [FOLD_ACTION.Remove]: {
         near: SHAPE_CHANGE.Remove,
         far: SHAPE_CHANGE.Remove
     },
-    [FOLD_TYPE.Expand]: {
+    [FOLD_ACTION.Expand]: {
         near: SHAPE_CHANGE.Keep,
         far: SHAPE_CHANGE.Add
     },
-    [FOLD_TYPE.Contract]: {
+    [FOLD_ACTION.Contract]: {
         near: SHAPE_CHANGE.Add,
         far: SHAPE_CHANGE.Keep
     }
 }
+
+export const FOLD_COVER = {
+    Full: "Full",
+    Left: "Left",
+    Right: "Right"
+}
+export type FoldCover = keyof typeof FOLD_COVER
+export const FOLD_COVERS: FoldCover[] = Object.keys(FOLD_COVER) as FoldCover[]
 
 /**
  * Represents a shape with four vertices and an axis of symmetry
@@ -65,7 +72,11 @@ export class FoldSpec {
      * The first hinge will be in the clockwise direction from the start point,
      * and the second hinge will be in the counter-clockwise direction.
      */
-    static fromEndPoints(start: paper.Point, end: paper.Point): FoldSpec {
+    static fromEndPoints(
+        start: paper.Point,
+        end: paper.Point,
+        foldCover = FOLD_COVER.Full
+    ): FoldSpec {
         // Check that the input points are valid vertex coordinates
         for (let [point, name] of [
             [start, "start"],
@@ -84,21 +95,31 @@ export class FoldSpec {
         // We assume the input defines a valid (lattice-aligned) square.
         // So we just add the other two corners.
         let vector = end.subtract(start)
-        let midpoint = start.add(vector.multiply(0.5))
+        let midpoint = roundToHalfIntegers(start.add(vector.multiply(0.5)))
+        let leftCorner = roundToHalfIntegers(
+            midpoint.add(vector.multiply(0.5).rotate(-90, new paper.Point(0, 0)))
+        )
+        let rightCorner = roundToHalfIntegers(
+            midpoint.add(vector.multiply(0.5).rotate(90, new paper.Point(0, 0)))
+        )
 
-        let hinges: [paper.Point, paper.Point] = [
-            roundToHalfIntegerCoordinate(
-                midpoint.add(vector.multiply(0.5).rotate(-90, new paper.Point(0, 0)))
-            ),
-            roundToHalfIntegerCoordinate(
-                midpoint.add(vector.multiply(0.5).rotate(90, new paper.Point(0, 0)))
-            )
-        ]
+        let hinges: [paper.Point, paper.Point]
+        if (foldCover === FOLD_COVER.Full) {
+            hinges = [leftCorner, rightCorner]
+        } else if (foldCover === FOLD_COVER.Left) {
+            hinges = [leftCorner, midpoint]
+        } else if (foldCover === FOLD_COVER.Right) {
+            hinges = [midpoint, rightCorner]
+        } else {
+            throw new Error(`Invalid foldCover: ${foldCover}`)
+        }
 
         hinges.forEach((hinge, i) => {
             if (!isOnTetrakisLattice(hinge)) {
                 throw new Error(
-                    `Produced invalid hinge coordinates, hinge=${i}: (${hinge.x}, ${hinge.y})`
+                    `Produced invalid hinge coordinates, hinge=${i}: (${hinge.x}, ${hinge.y})` +
+                        ` for start=(${start.x}, ${start.y}), end=(${end.x}, ${end.y}), ` +
+                        `foldCover=${foldCover}`
                 )
             }
         })

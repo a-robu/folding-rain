@@ -3,7 +3,7 @@ import {
     isIntegerCoordinate,
     isHalfIntegerCoordinate,
     isOnTetrakisLattice,
-    roundToHalfIntegerCoordinate
+    roundToHalfIntegers
 } from "@/lib/tetrakis"
 import paper from "paper"
 
@@ -55,19 +55,17 @@ describe("isOnTetrakisLattice", () => {
 
 describe("roundToHalfIntegerCoordinate", () => {
     test("rounds to nearest half-integer coordinate (paper.Point)", () => {
-        expect(roundToHalfIntegerCoordinate(new paper.Point(1, 2))).toBePaperPoint(
-            new paper.Point(1, 2)
-        )
-        expect(roundToHalfIntegerCoordinate(new paper.Point(0.5, 1.5))).toBePaperPoint(
+        expect(roundToHalfIntegers(new paper.Point(1, 2))).toBePaperPoint(new paper.Point(1, 2))
+        expect(roundToHalfIntegers(new paper.Point(0.5, 1.5))).toBePaperPoint(
             new paper.Point(0.5, 1.5)
         )
-        expect(roundToHalfIntegerCoordinate(new paper.Point(1.24, 2.26))).toBePaperPoint(
+        expect(roundToHalfIntegers(new paper.Point(1.24, 2.26))).toBePaperPoint(
             new paper.Point(1, 2.5)
         )
-        expect(roundToHalfIntegerCoordinate(new paper.Point(1.24, 2.24))).toBePaperPoint(
+        expect(roundToHalfIntegers(new paper.Point(1.24, 2.24))).toBePaperPoint(
             new paper.Point(1, 2)
         )
-        expect(roundToHalfIntegerCoordinate(new paper.Point(-1.26, -2.74))).toBePaperPoint(
+        expect(roundToHalfIntegers(new paper.Point(-1.26, -2.74))).toBePaperPoint(
             new paper.Point(-1.5, -2.5)
         )
     })

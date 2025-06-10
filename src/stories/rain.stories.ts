@@ -2,7 +2,7 @@ import type PRNG from "random-seedable/@types/PRNG"
 import { XORShift } from "random-seedable"
 import paper from "paper"
 // import { XORShift } from "random-seedable"
-import { FOLD_TYPE, FoldSpec } from "@/lib/fold"
+import { FOLD_ACTION, FOLD_COVER, FOLD_COVERS, FoldSpec, type FoldCover } from "@/lib/fold"
 import { normalise, randomChoiceWeighted } from "@/lib/randomness"
 import { rigamarole } from "./rigamarole"
 import { exponentialDelay, sleep } from "@/lib/time"
@@ -11,8 +11,9 @@ import { exponentialDelay, sleep } from "@/lib/time"
 import type { AnimatedBoard } from "@/animated-board"
 import {
     allVertices,
-    roundToHalfIntegerCoordinate,
-    squareDiagonalsFromVertex
+    roundToHalfIntegers,
+    squareDiagonalsFromVertex,
+    areHalfCoversValid
 } from "@/lib/tetrakis"
 
 export default {
@@ -58,8 +59,12 @@ function tryCreate(
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             normalise([100, 50, 25, 10, 5, 2, 1, 1, 1, 1])
         )
-        let endVertex = roundToHalfIntegerCoordinate(startVertex.add(ray.multiply(rayMultiplier)))
-        let unfoldPlan = FoldSpec.fromEndPoints(startVertex, endVertex)
+        let vector = ray.multiply(rayMultiplier)
+        let endVertex = roundToHalfIntegers(startVertex.add(vector))
+        let halfCoversAreValid = areHalfCoversValid(startVertex, vector)
+        let foldCovers = halfCoversAreValid ? FOLD_COVERS : [FOLD_COVER.Full]
+        let foldCover = random.choice(foldCovers)
+        let unfoldPlan = FoldSpec.fromEndPoints(startVertex, endVertex, foldCover)
         let quad = unfoldPlan.toQuad()
         // Check if the plan is within the bounds of the lattice
         if (quad.segments.some(segment => !bounds.contains(segment.point))) {
@@ -80,7 +85,7 @@ function tryCreate(
 
         let unusedIndex =
             animatedBoard.shapes.size == 0 ? 1 : Math.max(...animatedBoard.shapes.keys()) + 1
-        animatedBoard.fold(unusedIndex, unfoldPlan, FOLD_TYPE.Create)
+        animatedBoard.fold(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
         let label = new paper.PointText({
             content: unusedIndex,
             point: startVertex.add(ray.multiply(rayMultiplier / 2)).add(new paper.Point(0, 0.16)),

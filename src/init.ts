@@ -12,7 +12,7 @@ export function init(bounds: paper.Rectangle, zoom: number, gridLines: boolean) 
     animationLayer.name = "Animation"
     let trapLayer = new paper.Layer() // Traps paths made for calculations
     trapLayer.activate()
-    trapLayer.visible = false
+    trapLayer.visible = true
     let annotationsLayer = new paper.Layer()
     annotationsLayer.name = "Annotations"
 

@@ -1,58 +1,33 @@
 import paper from "paper"
 import { FOLD_ACTION, FoldSpec } from "@/lib/fold"
 import { rigamarole } from "./rigamarole"
-import { allTriangleIdxs, allVertices, makeTrianglePolygon } from "@/lib/tetrakis"
 import { sleep } from "@/lib/time"
+import { LabelViz } from "./label-viz"
 
 export default {
-    title: "Checks"
+    title: "Checks",
+    argTypes: {
+        drawGridLines: { control: "boolean", defaultValue: true },
+        contactViz: { control: "boolean", defaultValue: false },
+        showLabels: { control: "boolean", defaultValue: false }
+    }
 }
 
-export function latticeTrianglesAndPoints() {
+export function latticeTrianglesAndPoints(args: {
+    drawGridLines: boolean
+    contactViz: boolean
+    showLabels: boolean
+}) {
     let bounds = new paper.Rectangle(0, 0, 5, 5)
     let { container, animatedBoard, annotationsLayer } = rigamarole({
         bounds,
         zoom: 70,
-        drawGridLines: false
+        drawGridLines: args.drawGridLines,
+        contactViz: args.contactViz
     })
-
-    // Triangles
-    let latticeVizTriangles: paper.Path[] = []
-    for (let tx of allTriangleIdxs(bounds)) {
-        let triangle = makeTrianglePolygon(tx)
-        triangle.fillColor = new paper.Color(0, 1, 0, 0.5) // green
-        triangle.visible = false // initially hidden
-        annotationsLayer.addChild(triangle)
-        latticeVizTriangles.push(triangle)
+    if (args.showLabels) {
+        new LabelViz(annotationsLayer, animatedBoard)
     }
-
-    // Points
-    let latticeVizPoints: { point: paper.Point; circle: paper.Path.Circle }[] = []
-    for (let vertex of allVertices(bounds)) {
-        let circle = new paper.Path.Circle(vertex, 0.1)
-        circle.fillColor = new paper.Color(0, 1, 0, 0.5) // green
-        circle.visible = false // initially hidden
-        annotationsLayer.addChild(circle)
-        latticeVizPoints.push({ point: vertex, circle })
-    }
-
-    function onShapeUpdate() {
-        // Update triangles
-        for (let triangle of latticeVizTriangles) {
-            triangle.visible = !triangle.intersects(animatedBoard.shapes.get(1) as paper.Item)
-        }
-        // Update points
-        for (let { point, circle } of latticeVizPoints) {
-            circle.visible = !(
-                circle.intersects(animatedBoard.shapes.get(1) as paper.Item) ||
-                animatedBoard.shapes.get(1)?.contains(point)
-            )
-        }
-    }
-
-    animatedBoard.onShapeUpdate = onShapeUpdate
-    onShapeUpdate()
-
     async function animate() {
         await sleep(300)
         await animatedBoard.fold(
@@ -65,3 +40,4 @@ export function latticeTrianglesAndPoints() {
 
     return container
 }
+latticeTrianglesAndPoints.args = { drawGridLines: true, contactViz: false, showLabels: false }

@@ -3,15 +3,32 @@ import { AnimatedBoard } from "@/animated-board"
 import { FOLD_ACTION, FoldSpec } from "@/lib/fold"
 import { sleep } from "@/lib/time"
 import { rigamarole } from "./rigamarole"
+import { LabelViz } from "./label-viz"
 
 export default {
-    title: "Patterns"
+    title: "Patterns",
+    argTypes: {
+        drawGridLines: { control: "boolean", defaultValue: true },
+        contactViz: { control: "boolean", defaultValue: false },
+        showLabels: { control: "boolean", defaultValue: false }
+    }
 }
 
-export function threeTriangles() {
+export function threeTriangles(args: {
+    drawGridLines: boolean
+    contactViz: boolean
+    showLabels: boolean
+}) {
     let bounds = new paper.Rectangle(0, 0, 3, 4)
-    let { container, animatedBoard } = rigamarole({ bounds, zoom: 80 })
-
+    let { container, animatedBoard, annotationsLayer } = rigamarole({
+        bounds,
+        zoom: 80,
+        drawGridLines: args.drawGridLines,
+        contactViz: args.contactViz
+    })
+    if (args.showLabels) {
+        new LabelViz(annotationsLayer, animatedBoard)
+    }
     async function doFolds() {
         animatedBoard.fold(
             1,
@@ -19,25 +36,22 @@ export function threeTriangles() {
             FOLD_ACTION.Create
         )
         await sleep(1000)
-
         animatedBoard.fold(
             2,
             FoldSpec.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4)),
             FOLD_ACTION.Create
         )
         await sleep(1000)
-
         animatedBoard.fold(
             3,
             FoldSpec.fromEndPoints(new paper.Point(2.5, 0.5), new paper.Point(2.5, 1.5)),
             FOLD_ACTION.Create
         )
     }
-
     doFolds()
-
     return container
 }
+threeTriangles.args = { drawGridLines: true, contactViz: false, showLabels: false }
 
 async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id: number) {
     await animatedBoard.fold(
@@ -93,18 +107,37 @@ async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id:
     await Promise.all(thirdFolds)
 }
 
-export function flower() {
+export function flower(args: { drawGridLines: boolean; contactViz: boolean; showLabels: boolean }) {
     let bounds = new paper.Rectangle(0, 0, 4, 4)
-    let { container, animatedBoard } = rigamarole({ bounds, zoom: 100 })
-
+    let { container, animatedBoard, annotationsLayer } = rigamarole({
+        bounds,
+        zoom: 100,
+        drawGridLines: args.drawGridLines,
+        contactViz: args.contactViz
+    })
+    if (args.showLabels) {
+        new LabelViz(annotationsLayer, animatedBoard)
+    }
     makeFlower(animatedBoard, new paper.Point(2, 2), 1)
-
     return container
 }
+flower.args = { drawGridLines: true, contactViz: false, showLabels: false }
 
-export function fourFlowers() {
+export function fourFlowers(args: {
+    drawGridLines: boolean
+    contactViz: boolean
+    showLabels: boolean
+}) {
     let bounds = new paper.Rectangle(0, 0, 9, 9)
-    let { container, animatedBoard } = rigamarole({ bounds, zoom: 45 })
+    let { container, animatedBoard, annotationsLayer } = rigamarole({
+        bounds,
+        zoom: 45,
+        drawGridLines: args.drawGridLines,
+        contactViz: args.contactViz
+    })
+    if (args.showLabels) {
+        new LabelViz(annotationsLayer, animatedBoard)
+    }
     let id = 1
     for (let center of [
         new paper.Point(2, 2),
@@ -114,6 +147,6 @@ export function fourFlowers() {
     ]) {
         makeFlower(animatedBoard, center, id++)
     }
-
     return container
 }
+fourFlowers.args = { drawGridLines: true, contactViz: false, showLabels: false }

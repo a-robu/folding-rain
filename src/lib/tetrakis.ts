@@ -95,8 +95,8 @@ export function roundToHalfIntegers(point: paper.Point): paper.Point {
 export function allVertices(rect: paper.Rectangle): paper.Point[] {
     let vertices: paper.Point[] = []
 
-    for (let y = rect.topLeft.y; y <= rect.bottomRight.y; y++) {
-        for (let x = rect.topLeft.x; x <= rect.bottomRight.x; x++) {
+    for (let y = rect.topLeft.y; y < rect.bottomRight.y; y++) {
+        for (let x = rect.topLeft.x; x < rect.bottomRight.x; x++) {
             // We'll avoid providing all the vertices in order to avoid creating duplicates.
             // We only provide the top-left corner of the square if this is top-left square
             // of the grid, meaning (x, y) == (0, 0).

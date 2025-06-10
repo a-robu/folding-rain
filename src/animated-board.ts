@@ -80,12 +80,17 @@ class FoldAnimation {
 export class AnimatedBoard {
     shapes: Map<number, paper.Path> = new Map()
     private shapesLayer: paper.Layer
+    lockShapes: paper.Group = new paper.Group()
     private animationLayer: paper.Layer
     private runningAnimations: {
         animation: FoldAnimation
         finalizeAnimation: () => void
     }[] = []
     private random: PRNG
+    private shapeUpdateListeners: Array<() => void> = []
+    /**
+     * @deprecated Use addShapeUpdateListener instead
+     */
     onShapeUpdate = () => {}
 
     constructor(shapesLayer: paper.Layer, animationLayer: paper.Layer, random: PRNG) {
@@ -94,11 +99,81 @@ export class AnimatedBoard {
         this.random = random
     }
 
+    addShapeUpdateListener(listener: () => void) {
+        this.shapeUpdateListeners.push(listener)
+    }
+    removeShapeUpdateListener(listener: () => void) {
+        this.shapeUpdateListeners = this.shapeUpdateListeners.filter(l => l !== listener)
+    }
+    private notifyShapeUpdateListeners() {
+        for (const listener of this.shapeUpdateListeners) {
+            listener()
+        }
+        this.onShapeUpdate()
+    }
+
     private makePastelColor() {
         return randomColor({
             luminosity: "light",
             seed: this.random.int()
         })
+    }
+
+    findPolygonContacts(shape: paper.Path) {
+        let existingShapeIds = []
+        let lockShapeIds = []
+        for (let existingShape of this.shapes.values()) {
+            if (
+                existingShape.intersects(shape) ||
+                existingShape.contains(shape.segments[0].point)
+            ) {
+                let id = existingShape.data.id
+                if (id == null) {
+                    throw new Error("Shape does not have an ID")
+                }
+                existingShapeIds.push(existingShape.data.id)
+            }
+        }
+        for (let lockShape of this.lockShapes.children) {
+            if (lockShape.intersects(shape) || lockShape.contains(shape.segments[0].point)) {
+                let id = lockShape.data.id
+                if (id == null) {
+                    throw new Error("Lock shape does not have an ID")
+                }
+                lockShapeIds.push(lockShape.data.id)
+            }
+        }
+        return {
+            shapeIds: existingShapeIds,
+            lockShapeIds: lockShapeIds
+        }
+    }
+
+    findPointContacts(point: paper.Point) {
+        let existingShapeIds = []
+        let lockShapeIds = []
+        for (let existingShape of this.shapes.values()) {
+            if (existingShape.contains(point)) {
+                let id = existingShape.data.id
+                if (id == null) {
+                    throw new Error("Shape does not have an ID")
+                }
+                existingShapeIds.push(existingShape.data.id)
+            }
+        }
+        for (let lockShape of this.lockShapes.children) {
+            if (lockShape.contains(point)) {
+                let id = lockShape.data.id
+                if (id == null) {
+                    throw new Error("Lock shape does not have an ID")
+                }
+                lockShapeIds.push(lockShape.data.id)
+            }
+        }
+        return {
+            shapeIds: existingShapeIds,
+            lockShapeIds: lockShapeIds
+        }
     }
 
     onFrame(event: paper.Event & { delta: number; time: number }) {
@@ -139,9 +214,15 @@ export class AnimatedBoard {
         let triangles = foldSpec.toTriangles()
         let template = FOLD_TEMPLATES[foldAction]
         this.applyTriangleUpdate(shapeId, triangles.near, template.near)
-        await this.animateFlap(shapeId, foldSpec, template, () =>
+        let lockShape = triangles.far.clone()
+        lockShape.data.id = shapeId
+        this.lockShapes.addChild(lockShape)
+        this.notifyShapeUpdateListeners()
+        await this.animateFlap(shapeId, foldSpec, template, () => {
             this.applyTriangleUpdate(shapeId, triangles.far, template.far)
-        )
+            lockShape.remove()
+            this.notifyShapeUpdateListeners()
+        })
     }
 
     animateFlap(
@@ -232,12 +313,14 @@ export class AnimatedBoard {
                 let created = triangle.clone()
                 created.reorient(false, true)
                 created.fillColor = new paper.Color(this.makePastelColor())
+                created.data.id = shapeId
                 this.shapes.set(shapeId, created)
                 this.shapesLayer.addChild(created)
             }
         } else {
             throw new Error("Unrecognized color transition: " + `${shapeChange}`)
         }
-        this.onShapeUpdate()
+        // At the end of this method, after any shape changes:
+        this.notifyShapeUpdateListeners()
     }
 }

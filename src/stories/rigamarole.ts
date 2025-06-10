@@ -1,5 +1,6 @@
 import { init } from "@/init"
 import paper from "paper"
+import { ContactViz } from "./contact-viz"
 
 declare global {
     interface Window {
@@ -13,13 +14,15 @@ export function rigamarole({
     zoom = 50,
     pixelWidth = 400,
     pixelheight = 400,
-    drawGridLines = true
+    drawGridLines = true,
+    contactViz = false
 }: {
     bounds?: paper.Rectangle
     zoom?: number
     pixelWidth?: number
     pixelheight?: number
     drawGridLines?: boolean
+    contactViz?: boolean
 } = {}) {
     // Create the canvas and bind paper.js to it
     const container = document.createElement("div")
@@ -37,5 +40,10 @@ export function rigamarole({
 
     window.animatedBoard = animatedBoard
 
-    return { container, animatedBoard, annotationsLayer }
+    let contactVizInstance: ContactViz | undefined = undefined
+    if (contactViz) {
+        contactVizInstance = new ContactViz(bounds, annotationsLayer, animatedBoard)
+    }
+
+    return { container, animatedBoard, annotationsLayer, contactViz: contactVizInstance }
 }

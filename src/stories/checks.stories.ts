@@ -2,34 +2,26 @@ import paper from "paper"
 import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold"
 import { rigamarole } from "./rigamarole"
 import { sleep } from "@/lib/time"
-import { LabelViz } from "./label-viz"
-import { angleBetweenVectors, discretizeAngle, getSegmentAngle } from "@/lib/vec"
+import { getSegmentAngle } from "@/lib/vec"
 import { roundToHalfIntegers } from "@/lib/tetrakis"
+import { withCommonArgs, type CommonStoryArgs } from "./common-args"
 
 export default {
-    title: "Checks",
-    argTypes: {
-        drawGridLines: { control: "boolean", defaultValue: true },
-        contactViz: { control: "boolean", defaultValue: false },
-        showLabels: { control: "boolean", defaultValue: false }
-    }
+    title: "Checks"
 }
 
-export function latticeTrianglesAndPoints(args: {
-    drawGridLines: boolean
-    contactViz: boolean
-    showLabels: boolean
-}) {
+export const latticeTrianglesAndPoints = withCommonArgs(function latticeTrianglesAndPoints(
+    args: CommonStoryArgs
+) {
     let bounds = new paper.Rectangle(0, 0, 5, 5)
-    let { container, animatedBoard, annotationsLayer } = rigamarole({
+    let { container, animatedBoard } = rigamarole({
         bounds,
         zoom: 70,
         drawGridLines: args.drawGridLines,
-        contactViz: args.contactViz
+        latticeAvailability: args.latticeAvailability,
+        latticeContactid: args.latticeContactid,
+        showShapeId: args.showShapeId
     })
-    if (args.showLabels) {
-        new LabelViz(annotationsLayer, animatedBoard)
-    }
     async function animate() {
         await sleep(300)
         await animatedBoard.fold(
@@ -41,21 +33,44 @@ export function latticeTrianglesAndPoints(args: {
     animate()
 
     return container
-}
-latticeTrianglesAndPoints.args = { drawGridLines: true, contactViz: false, showLabels: false }
+})
 
-export function wedges(args: { drawGridLines: boolean; contactViz: boolean; showLabels: boolean }) {
+export const fullCoverCandidates = withCommonArgs(function fullCoverCandidates(
+    args: CommonStoryArgs
+) {
+    let bounds = new paper.Rectangle(0, 0, 5, 5)
+    let { container, animatedBoard } = rigamarole({
+        bounds,
+        zoom: 70,
+        drawGridLines: args.drawGridLines,
+        latticeAvailability: args.latticeAvailability,
+        latticeContactid: args.latticeContactid,
+        showShapeId: args.showShapeId
+    })
+    async function animate() {
+        await animatedBoard.fold(
+            1,
+            FoldSpec.fromEndPoints(new paper.Point(1, 1), new paper.Point(3, 3), FOLD_COVER.Full),
+            FOLD_ACTION.Create,
+            true
+        )
+    }
+    animate()
+
+    return container
+})
+
+export const wedges = withCommonArgs(function wedges(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(-2, -2, 7, 7)
-    let { container, animatedBoard, annotationsLayer } = rigamarole({
+    let { container, animatedBoard } = rigamarole({
         bounds,
         zoom: 40,
         drawGridLines: false, //, args.drawGridLines,
-        contactViz: args.contactViz,
-        speedFactor: 3
+        latticeAvailability: args.latticeAvailability,
+        latticeContactid: args.latticeContactid,
+        speedFactor: 3,
+        showShapeId: args.showShapeId
     })
-    if (args.showLabels) {
-        new LabelViz(annotationsLayer, animatedBoard)
-    }
     let vertexLabelsGroup = new paper.Group()
     function updateVertexLabels(shape: paper.Path) {
         vertexLabelsGroup.removeChildren()
@@ -161,5 +176,4 @@ export function wedges(args: { drawGridLines: boolean; contactViz: boolean; show
     }
     animate()
     return container
-}
-wedges.args = { drawGridLines: true, contactViz: false, showLabels: false }
+})

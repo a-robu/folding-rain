@@ -3,32 +3,23 @@ import { AnimatedBoard } from "@/animated-board"
 import { FOLD_ACTION, FoldSpec } from "@/lib/fold"
 import { sleep } from "@/lib/time"
 import { rigamarole } from "./rigamarole"
-import { LabelViz } from "./label-viz"
+import { withCommonArgs } from "./common-args"
+import type { CommonStoryArgs } from "./common-args"
 
 export default {
-    title: "Patterns",
-    argTypes: {
-        drawGridLines: { control: "boolean", defaultValue: true },
-        contactViz: { control: "boolean", defaultValue: false },
-        showLabels: { control: "boolean", defaultValue: false }
-    }
+    title: "Patterns"
 }
 
-export function threeTriangles(args: {
-    drawGridLines: boolean
-    contactViz: boolean
-    showLabels: boolean
-}) {
+export const threeTriangles = withCommonArgs(function threeTriangles(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(0, 0, 3, 4)
-    let { container, animatedBoard, annotationsLayer } = rigamarole({
+    let { container, animatedBoard } = rigamarole({
         bounds,
         zoom: 80,
         drawGridLines: args.drawGridLines,
-        contactViz: args.contactViz
+        latticeAvailability: args.latticeAvailability,
+        latticeContactid: args.latticeContactid,
+        showShapeId: args.showShapeId
     })
-    if (args.showLabels) {
-        new LabelViz(annotationsLayer, animatedBoard)
-    }
     async function doFolds() {
         animatedBoard.fold(
             1,
@@ -50,8 +41,43 @@ export function threeTriangles(args: {
     }
     doFolds()
     return container
-}
-threeTriangles.args = { drawGridLines: true, contactViz: false, showLabels: false }
+})
+
+export const flower = withCommonArgs(function flower(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(0, 0, 4, 4)
+    let { container, animatedBoard } = rigamarole({
+        bounds,
+        zoom: 100,
+        drawGridLines: args.drawGridLines,
+        latticeAvailability: args.latticeAvailability,
+        latticeContactid: args.latticeContactid,
+        showShapeId: args.showShapeId
+    })
+    makeFlower(animatedBoard, new paper.Point(2, 2), 1)
+    return container
+})
+
+export const fourFlowers = withCommonArgs(function fourFlowers(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(0, 0, 9, 9)
+    let { container, animatedBoard } = rigamarole({
+        bounds,
+        zoom: 45,
+        drawGridLines: args.drawGridLines,
+        latticeAvailability: args.latticeAvailability,
+        latticeContactid: args.latticeContactid,
+        showShapeId: args.showShapeId
+    })
+    let id = 1
+    for (let center of [
+        new paper.Point(2, 2),
+        new paper.Point(2, 7),
+        new paper.Point(7, 2),
+        new paper.Point(7, 7)
+    ]) {
+        makeFlower(animatedBoard, center, id++)
+    }
+    return container
+})
 
 async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id: number) {
     await animatedBoard.fold(
@@ -106,47 +132,3 @@ async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id:
 
     await Promise.all(thirdFolds)
 }
-
-export function flower(args: { drawGridLines: boolean; contactViz: boolean; showLabels: boolean }) {
-    let bounds = new paper.Rectangle(0, 0, 4, 4)
-    let { container, animatedBoard, annotationsLayer } = rigamarole({
-        bounds,
-        zoom: 100,
-        drawGridLines: args.drawGridLines,
-        contactViz: args.contactViz
-    })
-    if (args.showLabels) {
-        new LabelViz(annotationsLayer, animatedBoard)
-    }
-    makeFlower(animatedBoard, new paper.Point(2, 2), 1)
-    return container
-}
-flower.args = { drawGridLines: true, contactViz: false, showLabels: false }
-
-export function fourFlowers(args: {
-    drawGridLines: boolean
-    contactViz: boolean
-    showLabels: boolean
-}) {
-    let bounds = new paper.Rectangle(0, 0, 9, 9)
-    let { container, animatedBoard, annotationsLayer } = rigamarole({
-        bounds,
-        zoom: 45,
-        drawGridLines: args.drawGridLines,
-        contactViz: args.contactViz
-    })
-    if (args.showLabels) {
-        new LabelViz(annotationsLayer, animatedBoard)
-    }
-    let id = 1
-    for (let center of [
-        new paper.Point(2, 2),
-        new paper.Point(2, 7),
-        new paper.Point(7, 2),
-        new paper.Point(7, 7)
-    ]) {
-        makeFlower(animatedBoard, center, id++)
-    }
-    return container
-}
-fourFlowers.args = { drawGridLines: true, contactViz: false, showLabels: false }

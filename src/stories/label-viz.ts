@@ -3,6 +3,7 @@ import type { AnimatedBoard } from "@/animated-board"
 
 export class LabelViz {
     private labels: paper.PointText[] = []
+    private circles: paper.Path.Circle[] = []
     private annotationsLayer: paper.Layer
     private animatedBoard: AnimatedBoard
 
@@ -18,6 +19,10 @@ export class LabelViz {
             label.remove()
         }
         this.labels = []
+        for (const circle of this.circles) {
+            circle.remove()
+        }
+        this.circles = []
     }
 
     private onShapeUpdate() {
@@ -26,6 +31,16 @@ export class LabelViz {
         for (const shape of this.animatedBoard.shapes.values()) {
             // Place label at shape's centroid
             const centroid = shape.position
+            // Add circle behind the label
+            const circle = new paper.Path.Circle({
+                center: centroid.add(new paper.Point(0, 0)),
+                radius: 0.18,
+                fillColor: "white",
+                strokeColor: "black",
+                strokeWidth: 0.03
+            })
+            this.annotationsLayer.addChild(circle)
+            this.circles.push(circle)
             const label = new paper.PointText({
                 content: i,
                 point: centroid.add(new paper.Point(0, 0.07)),

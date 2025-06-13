@@ -12,15 +12,11 @@ import {
     squareDiagonalsFromVertex,
     areHalfCoversValid
 } from "@/lib/tetrakis"
-import { LabelViz } from "./label-viz"
+import { withCommonArgs } from "./common-args"
+import type { CommonStoryArgs } from "./common-args"
 
 export default {
-    title: "Rain",
-    argTypes: {
-        drawGridLines: { control: "boolean", defaultValue: true },
-        contactViz: { control: "boolean", defaultValue: false },
-        showLabels: { control: "boolean", defaultValue: false }
-    }
+    title: "Rain"
 }
 
 function tryExpand(animatedBoard: AnimatedBoard, random: PRNG) {
@@ -132,12 +128,7 @@ function tryExpand(animatedBoard: AnimatedBoard, random: PRNG) {
     }
 }
 
-function tryCreate(
-    animatedBoard: AnimatedBoard,
-    annotationsLayer: paper.Layer,
-    bounds: paper.Rectangle,
-    random: PRNG
-) {
+function tryCreate(animatedBoard: AnimatedBoard, bounds: paper.Rectangle, random: PRNG) {
     for (let attempt = 0; attempt < 10; attempt++) {
         let startVertex = random.choice(allVertices(bounds))
         let ray = random.choice(squareDiagonalsFromVertex(startVertex))
@@ -181,37 +172,26 @@ function tryCreate(
     }
 }
 
-export function rain(args: { drawGridLines: boolean; contactViz: boolean; showLabels: boolean }) {
+export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(0, 0, 14, 14)
-    let { container, animatedBoard, annotationsLayer } = rigamarole({
+    let { container, animatedBoard } = rigamarole({
         bounds,
         zoom: 55,
         pixelWidth: 800,
         pixelheight: 800,
         drawGridLines: args.drawGridLines,
-        contactViz: args.contactViz
+        latticeAvailability: args.latticeAvailability,
+        latticeContactid: args.latticeContactid,
+        showShapeId: args.showShapeId
     })
-    let labelViz: LabelViz | undefined
-    if (args.showLabels) {
-        labelViz = new LabelViz(annotationsLayer, animatedBoard)
-    }
-    // If toggling off, remove listeners and labels (optional: not implemented for brevity)
     async function doFolds() {
         let random = new XORShift(123456789)
-        tryCreate(animatedBoard, annotationsLayer, bounds, random)
-        // while (true) {
+        tryCreate(animatedBoard, bounds, random)
         for (let i = 0; i < 10; i++) {
             tryExpand(animatedBoard, random)
         }
-        // tryCreate(animatedBoard, annotationsLayer, bounds, random)
         await sleep(1000)
-        // }
     }
     doFolds()
     return container
-}
-rain.args = {
-    drawGridLines: true,
-    contactViz: false,
-    showLabels: false
-}
+})

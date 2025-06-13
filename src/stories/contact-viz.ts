@@ -9,13 +9,19 @@ export class ContactViz {
     private GREEN = new paper.Color(0, 1, 0, 0.5)
     private ORANGE = new paper.Color(1, 0.5, 0, 0.5)
     private animatedBoard: any
+    private showAvailability: boolean
+    private showContactId: boolean
 
     constructor(
         bounds: paper.Rectangle,
         annotationsLayer: paper.Layer,
-        animatedBoard: AnimatedBoard
+        animatedBoard: AnimatedBoard,
+        showAvailability = false,
+        showContactId = false
     ) {
         this.animatedBoard = animatedBoard
+        this.showAvailability = showAvailability
+        this.showContactId = showContactId
         // Triangles
         for (let tx of allTriangleIdxs(bounds)) {
             let triangle = makeTrianglePolygon(tx)
@@ -50,22 +56,31 @@ export class ContactViz {
     onShapeUpdate() {
         for (let [key, triangle] of this.latticeVizTriangles) {
             let contacts = this.animatedBoard.findPolygonContacts(triangle)
-            if (contacts.shapeIds.length > 0) {
-                triangle.visible = false
-            } else if (contacts.lockShapeIds.length > 0) {
-                triangle.fillColor = this.ORANGE
-                triangle.visible = true
+            if (this.showAvailability) {
+                if (contacts.shapeIds.length > 0) {
+                    triangle.visible = false
+                } else if (contacts.lockShapeIds.length > 0) {
+                    triangle.fillColor = this.ORANGE
+                    triangle.visible = true
+                } else {
+                    triangle.fillColor = this.GREEN
+                    triangle.visible = true
+                }
             } else {
-                triangle.fillColor = this.GREEN
-                triangle.visible = true
+                triangle.visible = false
             }
             let label = this.triangleLabels.get(key)
-            if (contacts.lockShapeIds.length == 0 && contacts.shapeIds.length == 0) {
-                label!.content = ""
-            } else if (contacts.shapeIds.length > 0 && contacts.lockShapeIds.length == 0) {
-                label!.content = `${contacts.shapeIds}`
+            if (this.showContactId) {
+                if (contacts.lockShapeIds.length == 0 && contacts.shapeIds.length == 0) {
+                    label!.content = ""
+                } else if (contacts.shapeIds.length > 0 && contacts.lockShapeIds.length == 0) {
+                    label!.content = `${contacts.shapeIds}`
+                } else {
+                    label!.content = `${contacts.shapeIds}/${contacts.lockShapeIds}`
+                }
+                label!.visible = true
             } else {
-                label!.content = `${contacts.shapeIds}/${contacts.lockShapeIds}`
+                label!.visible = false
             }
         }
         for (let { point, circle } of this.latticeVizPoints) {

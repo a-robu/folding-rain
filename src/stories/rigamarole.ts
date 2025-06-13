@@ -1,6 +1,7 @@
 import { init } from "@/init"
 import paper from "paper"
 import { ContactViz } from "./contact-viz"
+import { LabelViz } from "./label-viz"
 
 declare global {
     interface Window {
@@ -15,16 +16,20 @@ export function rigamarole({
     pixelWidth = 400,
     pixelheight = 400,
     drawGridLines = true,
-    contactViz = false,
-    speedFactor = 1
+    latticeAvailability = false,
+    latticeContactid = false,
+    speedFactor = 1,
+    showShapeId = false
 }: {
     bounds?: paper.Rectangle
     zoom?: number
     pixelWidth?: number
     pixelheight?: number
     drawGridLines?: boolean
-    contactViz?: boolean
+    latticeAvailability?: boolean
+    latticeContactid?: boolean
     speedFactor?: number
+    showShapeId?: boolean
 } = {}) {
     // Create the canvas and bind paper.js to it
     const container = document.createElement("div")
@@ -43,9 +48,26 @@ export function rigamarole({
     window.animatedBoard = animatedBoard
 
     let contactVizInstance: ContactViz | undefined = undefined
-    if (contactViz) {
-        contactVizInstance = new ContactViz(bounds, annotationsLayer, animatedBoard)
+    if (latticeAvailability || latticeContactid) {
+        contactVizInstance = new ContactViz(
+            bounds,
+            annotationsLayer,
+            animatedBoard,
+            latticeAvailability,
+            latticeContactid
+        )
     }
 
-    return { container, animatedBoard, annotationsLayer, contactViz: contactVizInstance }
+    let labelVizInstance: LabelViz | undefined = undefined
+    if (showShapeId) {
+        labelVizInstance = new LabelViz(annotationsLayer, animatedBoard)
+    }
+
+    return {
+        container,
+        animatedBoard,
+        annotationsLayer,
+        contactViz: contactVizInstance,
+        labelViz: labelVizInstance
+    }
 }

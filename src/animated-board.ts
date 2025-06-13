@@ -92,6 +92,7 @@ export class AnimatedBoard {
      * @deprecated Use addShapeUpdateListener instead
      */
     onShapeUpdate = () => {}
+    speedFactor = 1
 
     constructor(shapesLayer: paper.Layer, animationLayer: paper.Layer, random: PRNG) {
         this.shapesLayer = shapesLayer
@@ -179,7 +180,7 @@ export class AnimatedBoard {
     onFrame(event: paper.Event & { delta: number; time: number }) {
         for (let i = 0; i < this.runningAnimations.length; i++) {
             let { animation, finalizeAnimation } = this.runningAnimations[i]
-            animation.t += event.delta
+            animation.t += event.delta * this.speedFactor
             animation.onFrame()
             if (animation.progress > 1) {
                 animation.onDone()
@@ -210,7 +211,7 @@ export class AnimatedBoard {
         throw new Error("Invalid state")
     }
 
-    async fold(shapeId: number, foldSpec: FoldSpec, foldAction: FoldAction) {
+    async fold(shapeId: number, foldSpec: FoldSpec, foldAction: FoldAction, instantaneous = false) {
         let triangles = foldSpec.toTriangles()
         let template = FOLD_TEMPLATES[foldAction]
         this.applyTriangleUpdate(shapeId, triangles.near, template.near)
@@ -218,11 +219,17 @@ export class AnimatedBoard {
         lockShape.data.id = shapeId
         this.lockShapes.addChild(lockShape)
         this.notifyShapeUpdateListeners()
-        await this.animateFlap(shapeId, foldSpec, template, () => {
+        if (instantaneous) {
             this.applyTriangleUpdate(shapeId, triangles.far, template.far)
             lockShape.remove()
             this.notifyShapeUpdateListeners()
-        })
+        } else {
+            await this.animateFlap(shapeId, foldSpec, template, () => {
+                this.applyTriangleUpdate(shapeId, triangles.far, template.far)
+                lockShape.remove()
+                this.notifyShapeUpdateListeners()
+            })
+        }
     }
 
     animateFlap(

@@ -25,26 +25,110 @@ export default {
 
 function tryExpand(animatedBoard: AnimatedBoard, random: PRNG) {
     if (animatedBoard.shapes.size == 0) {
+        console.log("No shapes to expand.")
         return
     }
 
     for (let attempt = 0; attempt < 10; attempt++) {
-        // pick a random shape
+        // Pick a random shape
         let shapeId = random.choice(Array.from(animatedBoard.shapes.keys()))
         let shape = animatedBoard.shapes.get(shapeId)!
-        // Filter to find the "pointy corners" of the shape (<= 90 degrees)
-        let pointyCorners = shape.segments.filter(segment => {
-            let vectorToNext = segment.point.subtract(segment.next.point)
-            let vectorToPrev = segment.point.subtract(segment.previous.point)
-            return vectorToNext.dot(vectorToPrev) >= 0
-        })
-        if (pointyCorners.length == 0) {
+        if (!shape || shape.segments.length < 2) {
+            console.log("Shape is missing or has less than 2 segments.", shapeId)
             continue
         }
-        let pointyCorner = random.choice(pointyCorners)
-        // The apex of the corner is going to be one of the hinges of the fold
-        // And the edges away from the apex will be either the hinge of the fold
-        // or one of the edges of the triangle folds.
+
+        // Pick a random edge (segment)
+        let segIdx = Math.abs(random.int()) % shape.segments.length
+        let segA = shape.segments[segIdx]
+        let segB = segA.next
+        let A = segA.point
+        let B = segB.point
+        let baseVec = B.subtract(A)
+        if (baseVec.length === 0) {
+            console.log("Base vector has zero length.", A, B)
+            continue
+        }
+
+        let best = null
+        let bestScale = 0
+        // Only try the outward direction for clockwise polygons: sign = 1
+        let sign = 1
+        for (let scale = 0.5; scale <= 6; scale += 0.5) {
+            let perp = baseVec
+                .rotate(90 * sign, new paper.Point(0, 0))
+                .normalize(baseVec.length * scale)
+            let apex = A.add(baseVec.multiply(0.5)).add(perp.multiply(0.5 / baseVec.length))
+            apex = roundToHalfIntegers(apex)
+
+            // For expansion, apex should be OUTSIDE the shape
+            if (shape.contains(apex)) {
+                console.log("Apex is inside shape (should be outside for expansion):", {
+                    apex: apex.toString(),
+                    A: A.toString(),
+                    B: B.toString(),
+                    baseVec: baseVec.toString(),
+                    baseVecLength: baseVec.length,
+                    scale,
+                    sign,
+                    perp: perp.toString(),
+                    apexMidpoint: A.add(baseVec.multiply(0.5)).toString(),
+                    apexOffset: perp.multiply(0.5 / baseVec.length).toString(),
+                    shapeId,
+                    segIdx
+                })
+                break
+            }
+
+            // Build the triangle path
+            let tri = new paper.Path([A, B, apex])
+            tri.closed = true
+
+            // Check if triangle overlaps the shape except for the base edge
+            // We'll check that the triangle does not contain any points inside the shape except A and B
+            let triMid1 = tri.getPointAt(tri.length * 0.25)
+            let triMid2 = tri.getPointAt(tri.length * 0.75)
+            if (shape.contains(triMid1) || shape.contains(triMid2)) {
+                console.log("Triangle overlaps shape at scale", scale, "sign", sign)
+                tri.remove()
+                break
+            }
+
+            // If valid, keep as best so far
+            if (scale > bestScale) {
+                best = { apex, sign, scale }
+                bestScale = scale
+            }
+            tri.remove()
+        }
+        if (best) {
+            // Compute the reflection of apex across the edge AB
+            let { apex } = best
+            let AB = B.subtract(A)
+            let mid = A.add(AB.multiply(0.5))
+            let apexToMid = mid.subtract(apex)
+            let end = mid.add(apexToMid)
+            end = roundToHalfIntegers(end)
+
+            // Check for collisions with other shapes (for the new triangle to be added)
+            let newTri = new paper.Path([A, B, end])
+            newTri.closed = true
+            let contacts = animatedBoard.findPolygonContacts(newTri)
+            if (contacts.shapeIds.length > 0 || contacts.lockShapeIds.length > 0) {
+                console.log("Collision detected for new triangle at edge", segIdx, "end:", end)
+                newTri.remove()
+                continue
+            }
+
+            // Use apex as start, [A, B] as hinges, end as end
+            console.log("Expanding shape", shapeId, "at edge", segIdx, "apex:", apex, "end:", end)
+            let unfoldPlan = new FoldSpec(apex, [A, B], end)
+            animatedBoard.fold(shapeId, unfoldPlan, FOLD_ACTION.Expand)
+            newTri.remove()
+            return
+        } else {
+            console.log("No valid expansion found for shape", shapeId)
+        }
     }
 }
 
@@ -114,13 +198,14 @@ export function rain(args: { drawGridLines: boolean; contactViz: boolean; showLa
     // If toggling off, remove listeners and labels (optional: not implemented for brevity)
     async function doFolds() {
         let random = new XORShift(123456789)
-        while (true) {
-            for (let i = 0; i < 10; i++) {
-                tryExpand(animatedBoard, random)
-            }
-            tryCreate(animatedBoard, annotationsLayer, bounds, random)
-            await sleep(1000)
+        tryCreate(animatedBoard, annotationsLayer, bounds, random)
+        // while (true) {
+        for (let i = 0; i < 10; i++) {
+            tryExpand(animatedBoard, random)
         }
+        // tryCreate(animatedBoard, annotationsLayer, bounds, random)
+        await sleep(1000)
+        // }
     }
     doFolds()
     return container

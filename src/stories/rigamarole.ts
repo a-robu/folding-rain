@@ -15,7 +15,8 @@ export function rigamarole({
     pixelWidth = 400,
     pixelheight = 400,
     drawGridLines = true,
-    contactViz = false
+    contactViz = false,
+    speedFactor = 1
 }: {
     bounds?: paper.Rectangle
     zoom?: number
@@ -23,6 +24,7 @@ export function rigamarole({
     pixelheight?: number
     drawGridLines?: boolean
     contactViz?: boolean
+    speedFactor?: number
 } = {}) {
     // Create the canvas and bind paper.js to it
     const container = document.createElement("div")
@@ -36,7 +38,7 @@ export function rigamarole({
     container.appendChild(canvas)
     paper.setup(canvas)
 
-    let { animatedBoard, annotationsLayer } = init(bounds, zoom, drawGridLines)
+    let { animatedBoard, annotationsLayer } = init(bounds, zoom, drawGridLines, speedFactor)
 
     window.animatedBoard = animatedBoard
 

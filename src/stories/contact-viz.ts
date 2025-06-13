@@ -1,4 +1,4 @@
-import type { AnimatedBoard } from "@/animated-board"
+import type { Board } from "@/animated-board"
 import { allTriangleIdxs, allVertices, makeTrianglePolygon, triangleIdxToKey } from "@/lib/tetrakis"
 import paper from "paper"
 
@@ -8,18 +8,18 @@ export class ContactViz {
     private latticeVizPoints: { point: paper.Point; circle: paper.Path.Circle }[] = []
     private GREEN = new paper.Color(0, 1, 0, 0.5)
     private ORANGE = new paper.Color(1, 0.5, 0, 0.5)
-    private animatedBoard: any
+    private board: any
     private showAvailability: boolean
     private showContactId: boolean
 
     constructor(
         bounds: paper.Rectangle,
         annotationsLayer: paper.Layer,
-        animatedBoard: AnimatedBoard,
+        board: Board,
         showAvailability = false,
         showContactId = false
     ) {
-        this.animatedBoard = animatedBoard
+        this.board = board
         this.showAvailability = showAvailability
         this.showContactId = showContactId
         // Triangles
@@ -49,13 +49,13 @@ export class ContactViz {
             this.latticeVizPoints.push({ point: vertex, circle })
         }
 
-        this.animatedBoard.onShapeUpdate = this.onShapeUpdate.bind(this)
+        this.board.onShapeUpdate = this.onShapeUpdate.bind(this)
         this.onShapeUpdate()
     }
 
     onShapeUpdate() {
         for (let [key, triangle] of this.latticeVizTriangles) {
-            let contacts = this.animatedBoard.findPolygonContacts(triangle)
+            let contacts = this.board.findPolygonContacts(triangle)
             if (this.showAvailability) {
                 if (contacts.shapeIds.length > 0) {
                     triangle.visible = false
@@ -84,7 +84,7 @@ export class ContactViz {
             }
         }
         for (let { point, circle } of this.latticeVizPoints) {
-            let contacts = this.animatedBoard.findPointContacts(point)
+            let contacts = this.board.findPointContacts(point)
             if (contacts.shapeIds.length > 0) {
                 circle.visible = false
             } else if (contacts.lockShapeIds.length > 0) {

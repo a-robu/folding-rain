@@ -77,7 +77,7 @@ class FoldAnimation {
     }
 }
 
-export class AnimatedBoard {
+export class Board {
     shapes: Map<number, paper.Path> = new Map()
     private shapesLayer: paper.Layer
     lockShapes: paper.Group = new paper.Group()
@@ -192,7 +192,13 @@ export class AnimatedBoard {
         }
     }
 
-    private determineFlapColors(shapeId: number, shapeChange: ShapeChange) {
+    private determineFlapColors(
+        shapeId: number,
+        foldTemplate: FoldTemplate
+    ): {
+        initiallyVisible: paper.Color
+        subsequentlyVisible: paper.Color
+    } {
         let shape = this.shapes.get(shapeId)
         if (!shape) {
             throw new Error(`Shape with ID ${shapeId} does not exist`)
@@ -200,18 +206,28 @@ export class AnimatedBoard {
         if (shape.fillColor == null) {
             throw new Error(`Shape with ID ${shapeId} has no fill color`)
         }
-        if (shapeChange == SHAPE_CHANGE.Remove) {
-            return [shape.fillColor, new paper.Color(1, 1, 1)]
+        return {
+            initiallyVisible:
+                foldTemplate.near == SHAPE_CHANGE.Add ? new paper.Color(1, 1, 1) : shape.fillColor,
+            subsequentlyVisible:
+                foldTemplate.far == SHAPE_CHANGE.Remove ? new paper.Color(1, 1, 1) : shape.fillColor
         }
-        if (shapeChange == SHAPE_CHANGE.Add) {
-            return [new paper.Color(1, 1, 1), shape.fillColor]
-        } else if (shapeChange == SHAPE_CHANGE.Keep) {
-            return [shape.fillColor, shape.fillColor]
-        }
-        throw new Error("Invalid state")
     }
 
-    async fold(shapeId: number, foldSpec: FoldSpec, foldAction: FoldAction, instantaneous = false) {
+    foldInstantaneously(shapeId: number, foldSpec: FoldSpec, foldAction: FoldAction) {
+        return this.foldSyncOrAsync(shapeId, foldSpec, foldAction, true)
+    }
+
+    async foldAsync(shapeId: number, foldSpec: FoldSpec, foldAction: FoldAction) {
+        return this.foldSyncOrAsync(shapeId, foldSpec, foldAction, false)
+    }
+
+    private async foldSyncOrAsync(
+        shapeId: number,
+        foldSpec: FoldSpec,
+        foldAction: FoldAction,
+        instantaneous: boolean
+    ) {
         let triangles = foldSpec.toTriangles()
         let template = FOLD_TEMPLATES[foldAction]
         this.applyTriangleUpdate(shapeId, triangles.near, template.near)
@@ -219,15 +235,16 @@ export class AnimatedBoard {
         lockShape.data.id = shapeId
         this.lockShapes.addChild(lockShape)
         this.notifyShapeUpdateListeners()
-        if (instantaneous) {
-            this.applyTriangleUpdate(shapeId, triangles.far, template.far)
+        function onComplete(board: Board) {
+            board.applyTriangleUpdate(shapeId, triangles.far, template.far)
             lockShape.remove()
-            this.notifyShapeUpdateListeners()
+            board.notifyShapeUpdateListeners()
+        }
+        if (instantaneous) {
+            onComplete(this)
         } else {
             await this.animateFlap(shapeId, foldSpec, template, () => {
-                this.applyTriangleUpdate(shapeId, triangles.far, template.far)
-                lockShape.remove()
-                this.notifyShapeUpdateListeners()
+                onComplete(this)
             })
         }
     }
@@ -239,9 +256,9 @@ export class AnimatedBoard {
         onAnimationDone = () => {}
     ): Promise<void> {
         return new Promise(resolve => {
-            let [initiallyVisible, subsequentlyVisible] = this.determineFlapColors(
+            let { initiallyVisible, subsequentlyVisible } = this.determineFlapColors(
                 shapeId,
-                foldTemplate.near
+                foldTemplate
             )
             let flap = foldSpec.toTriangles().near.clone()
             this.animationLayer.addChild(flap)

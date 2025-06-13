@@ -1,5 +1,5 @@
 import paper from "paper"
-import { AnimatedBoard } from "@/animated-board"
+import { Board } from "@/animated-board"
 import { FOLD_ACTION, FoldSpec } from "@/lib/fold"
 import { sleep } from "@/lib/time"
 import { rigamarole } from "./rigamarole"
@@ -12,28 +12,25 @@ export default {
 
 export const threeTriangles = withCommonArgs(function threeTriangles(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(0, 0, 3, 4)
-    let { container, animatedBoard } = rigamarole({
+    let { container, board } = rigamarole({
         bounds,
         zoom: 80,
-        drawGridLines: args.drawGridLines,
-        latticeAvailability: args.latticeAvailability,
-        latticeContactid: args.latticeContactid,
-        showShapeId: args.showShapeId
+        ...args
     })
     async function doFolds() {
-        animatedBoard.fold(
+        board.foldAsync(
             1,
             FoldSpec.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1)),
             FOLD_ACTION.Create
         )
         await sleep(1000)
-        animatedBoard.fold(
+        board.foldAsync(
             2,
             FoldSpec.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4)),
             FOLD_ACTION.Create
         )
         await sleep(1000)
-        animatedBoard.fold(
+        board.foldAsync(
             3,
             FoldSpec.fromEndPoints(new paper.Point(2.5, 0.5), new paper.Point(2.5, 1.5)),
             FOLD_ACTION.Create
@@ -45,27 +42,21 @@ export const threeTriangles = withCommonArgs(function threeTriangles(args: Commo
 
 export const flower = withCommonArgs(function flower(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(0, 0, 4, 4)
-    let { container, animatedBoard } = rigamarole({
+    let { container, board } = rigamarole({
         bounds,
         zoom: 100,
-        drawGridLines: args.drawGridLines,
-        latticeAvailability: args.latticeAvailability,
-        latticeContactid: args.latticeContactid,
-        showShapeId: args.showShapeId
+        ...args
     })
-    makeFlower(animatedBoard, new paper.Point(2, 2), 1)
+    makeFlower(board, new paper.Point(2, 2), 1)
     return container
 })
 
 export const fourFlowers = withCommonArgs(function fourFlowers(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(0, 0, 9, 9)
-    let { container, animatedBoard } = rigamarole({
+    let { container, board } = rigamarole({
         bounds,
         zoom: 45,
-        drawGridLines: args.drawGridLines,
-        latticeAvailability: args.latticeAvailability,
-        latticeContactid: args.latticeContactid,
-        showShapeId: args.showShapeId
+        ...args
     })
     let id = 1
     for (let center of [
@@ -74,13 +65,13 @@ export const fourFlowers = withCommonArgs(function fourFlowers(args: CommonStory
         new paper.Point(7, 2),
         new paper.Point(7, 7)
     ]) {
-        makeFlower(animatedBoard, center, id++)
+        makeFlower(board, center, id++)
     }
     return container
 })
 
-async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id: number) {
-    await animatedBoard.fold(
+async function makeFlower(board: Board, center: paper.Point, id: number) {
+    await board.foldAsync(
         id,
         FoldSpec.fromEndPoints(
             new paper.Point(center.x, center.y + 1),
@@ -97,7 +88,7 @@ async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id:
         [1, 1]
     ]) {
         secondFolds.push(
-            animatedBoard.fold(
+            board.foldAsync(
                 id,
                 FoldSpec.fromEndPoints(
                     new paper.Point(center.x, center.y),
@@ -119,7 +110,7 @@ async function makeFlower(animatedBoard: AnimatedBoard, center: paper.Point, id:
         [-2, 0]
     ]) {
         thirdFolds.push(
-            animatedBoard.fold(
+            board.foldAsync(
                 id,
                 FoldSpec.fromEndPoints(
                     new paper.Point(center.x, center.y),

@@ -1,5 +1,5 @@
 import paper from "paper"
-import { AnimatedBoard } from "@/animated-board"
+import { Board } from "@/animated-board"
 import { drawGrid } from "@/draw-grid"
 import { XORShift } from "random-seedable"
 
@@ -16,9 +16,9 @@ export function init(bounds: paper.Rectangle, zoom: number, gridLines: boolean, 
     let annotationsLayer = new paper.Layer()
     annotationsLayer.name = "Annotations"
 
-    let animatedBoard = new AnimatedBoard(shapesLayer, animationLayer, new XORShift(123456789))
-    animatedBoard.speedFactor = speedFactor
-    paper.view.onFrame = animatedBoard.onFrame.bind(animatedBoard)
+    let board = new Board(shapesLayer, animationLayer, new XORShift(123456789))
+    board.speedFactor = speedFactor
+    paper.view.onFrame = board.onFrame.bind(board)
 
     // Zoom in and center the view
     paper.view.zoom = zoom
@@ -29,7 +29,7 @@ export function init(bounds: paper.Rectangle, zoom: number, gridLines: boolean, 
     }
 
     return {
-        animatedBoard,
+        board,
         annotationsLayer
     }
 }

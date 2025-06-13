@@ -1,15 +1,23 @@
+export type ShowVertexLabels = "off" | "vertexId" | "vertexAngle"
+
 export const commonArgTypes = {
     drawGridLines: { control: "boolean", defaultValue: true },
     latticeAvailability: { control: "boolean", defaultValue: false },
     latticeContactid: { control: "boolean", defaultValue: false },
-    showShapeId: { control: "boolean", defaultValue: false }
+    showShapeId: { control: "boolean", defaultValue: false },
+    showVertexLabels: {
+        control: { type: "radio" },
+        options: ["off", "vertexId", "vertexAngle"],
+        defaultValue: "off"
+    }
 }
 
 export const commonArgs = {
     drawGridLines: true,
     latticeAvailability: false,
     latticeContactid: false,
-    showShapeId: false
+    showShapeId: false,
+    showVertexLabels: "off" as ShowVertexLabels
 }
 
 // Helper to apply common argTypes and args to a story

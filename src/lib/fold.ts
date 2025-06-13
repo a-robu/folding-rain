@@ -35,7 +35,7 @@ export const FOLD_TEMPLATES: Record<FoldAction, FoldTemplate> = {
         far: SHAPE_CHANGE.Add
     },
     [FOLD_ACTION.Contract]: {
-        near: SHAPE_CHANGE.Add,
+        near: SHAPE_CHANGE.Remove,
         far: SHAPE_CHANGE.Keep
     }
 }

@@ -5,7 +5,7 @@ import { FOLD_ACTION, FOLD_COVER, FOLD_COVERS, FoldSpec } from "@/lib/fold"
 import { normalise, randomChoiceWeighted } from "@/lib/randomness"
 import { rigamarole } from "./rigamarole"
 import { exponentialDelay, sleep } from "@/lib/time"
-import type { AnimatedBoard } from "@/animated-board"
+import type { Board } from "@/animated-board"
 import {
     allVertices,
     roundToHalfIntegers,
@@ -19,16 +19,16 @@ export default {
     title: "Rain"
 }
 
-function tryExpand(animatedBoard: AnimatedBoard, random: PRNG) {
-    if (animatedBoard.shapes.size == 0) {
+function tryExpand(board: Board, random: PRNG) {
+    if (board.shapes.size == 0) {
         console.log("No shapes to expand.")
         return
     }
 
     for (let attempt = 0; attempt < 10; attempt++) {
         // Pick a random shape
-        let shapeId = random.choice(Array.from(animatedBoard.shapes.keys()))
-        let shape = animatedBoard.shapes.get(shapeId)!
+        let shapeId = random.choice(Array.from(board.shapes.keys()))
+        let shape = board.shapes.get(shapeId)!
         if (!shape || shape.segments.length < 2) {
             console.log("Shape is missing or has less than 2 segments.", shapeId)
             continue
@@ -109,7 +109,7 @@ function tryExpand(animatedBoard: AnimatedBoard, random: PRNG) {
             // Check for collisions with other shapes (for the new triangle to be added)
             let newTri = new paper.Path([A, B, end])
             newTri.closed = true
-            let contacts = animatedBoard.findPolygonContacts(newTri)
+            let contacts = board.findPolygonContacts(newTri)
             if (contacts.shapeIds.length > 0 || contacts.lockShapeIds.length > 0) {
                 console.log("Collision detected for new triangle at edge", segIdx, "end:", end)
                 newTri.remove()
@@ -119,7 +119,7 @@ function tryExpand(animatedBoard: AnimatedBoard, random: PRNG) {
             // Use apex as start, [A, B] as hinges, end as end
             console.log("Expanding shape", shapeId, "at edge", segIdx, "apex:", apex, "end:", end)
             let unfoldPlan = new FoldSpec(apex, [A, B], end)
-            animatedBoard.fold(shapeId, unfoldPlan, FOLD_ACTION.Expand)
+            board.fold(shapeId, unfoldPlan, FOLD_ACTION.Expand)
             newTri.remove()
             return
         } else {
@@ -128,7 +128,7 @@ function tryExpand(animatedBoard: AnimatedBoard, random: PRNG) {
     }
 }
 
-function tryCreate(animatedBoard: AnimatedBoard, bounds: paper.Rectangle, random: PRNG) {
+function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG) {
     for (let attempt = 0; attempt < 10; attempt++) {
         let startVertex = random.choice(allVertices(bounds))
         let ray = random.choice(squareDiagonalsFromVertex(startVertex))
@@ -148,33 +148,32 @@ function tryCreate(animatedBoard: AnimatedBoard, bounds: paper.Rectangle, random
         if (quad.segments.some(segment => !bounds.contains(segment.point))) {
             continue
         }
-        let contacts = animatedBoard.findPolygonContacts(quad)
+        let contacts = board.findPolygonContacts(quad)
         if (contacts.shapeIds.length > 0 || contacts.lockShapeIds.length > 0) {
             continue
         }
         // // Check if the plan's touches the perimeter of any other shape
-        // if (Array.from(animatedBoard.shapes.values()).some(shape => shape.intersects(quad))) {
+        // if (Array.from(board.shapes.values()).some(shape => shape.intersects(quad))) {
         //     continue
         // }
         // // Check if a point of the plan is contained within any existing shape
         // if (
-        //     Array.from(animatedBoard.shapes.values()).some(shape =>
+        //     Array.from(board.shapes.values()).some(shape =>
         //         shape.contains(quad.segments[0].point)
         //     )
         // ) {
         //     continue
         // }
 
-        let unusedIndex =
-            animatedBoard.shapes.size == 0 ? 1 : Math.max(...animatedBoard.shapes.keys()) + 1
-        animatedBoard.fold(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
+        let unusedIndex = board.shapes.size == 0 ? 1 : Math.max(...board.shapes.keys()) + 1
+        board.fold(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
         return
     }
 }
 
 export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(0, 0, 14, 14)
-    let { container, animatedBoard } = rigamarole({
+    let { container, board } = rigamarole({
         bounds,
         zoom: 55,
         pixelWidth: 800,
@@ -186,9 +185,9 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
     })
     async function doFolds() {
         let random = new XORShift(123456789)
-        tryCreate(animatedBoard, bounds, random)
+        tryCreate(board, bounds, random)
         for (let i = 0; i < 10; i++) {
-            tryExpand(animatedBoard, random)
+            tryExpand(board, random)
         }
         await sleep(1000)
     }

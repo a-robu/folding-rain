@@ -1,16 +1,16 @@
 import paper from "paper"
-import type { AnimatedBoard } from "@/animated-board"
+import type { Board } from "@/animated-board"
 
 export class LabelViz {
     private labels: paper.PointText[] = []
     private circles: paper.Path.Circle[] = []
     private annotationsLayer: paper.Layer
-    private animatedBoard: AnimatedBoard
+    private board: Board
 
-    constructor(annotationsLayer: paper.Layer, animatedBoard: AnimatedBoard) {
+    constructor(annotationsLayer: paper.Layer, board: Board) {
         this.annotationsLayer = annotationsLayer
-        this.animatedBoard = animatedBoard
-        this.animatedBoard.addShapeUpdateListener(this.onShapeUpdate.bind(this))
+        this.board = board
+        this.board.addShapeUpdateListener(this.onShapeUpdate.bind(this))
         this.onShapeUpdate()
     }
 
@@ -28,7 +28,7 @@ export class LabelViz {
     private onShapeUpdate() {
         this.clearLabels()
         let i = 1
-        for (const shape of this.animatedBoard.shapes.values()) {
+        for (const shape of this.board.shapes.values()) {
             // Place label at shape's centroid
             const centroid = shape.position
             // Add circle behind the label

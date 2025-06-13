@@ -1,5 +1,9 @@
 import paper from "paper"
-import { isOnTetrakisLattice, roundToHalfIntegers } from "./tetrakis"
+import {
+    fullCoverHingeBasisAlongVector,
+    isOnTetrakisLattice,
+    roundToHalfIntegers
+} from "@/lib/tetrakis"
 
 export const SHAPE_CHANGE = {
     Add: "Add",
@@ -62,6 +66,29 @@ export class FoldSpec {
         this.start = start
         this.hinges = hinges
         this.end = end
+    }
+
+    equals(other: FoldSpec): boolean {
+        return (
+            this.start.equals(other.start) &&
+            ((this.hinges[0].equals(other.hinges[0]) && this.hinges[1].equals(other.hinges[1])) ||
+                (this.hinges[0].equals(other.hinges[1]) &&
+                    this.hinges[1].equals(other.hinges[0]))) &&
+            this.end.equals(other.end)
+        )
+    }
+
+    key() {
+        return [
+            this.start.x,
+            this.start.y,
+            this.hinges[0].x,
+            this.hinges[0].y,
+            this.hinges[1].x,
+            this.hinges[1].y,
+            this.end.x,
+            this.end.y
+        ].join(",")
     }
 
     /**
@@ -136,11 +163,13 @@ export class FoldSpec {
         nearTriangle.add(this.hinges[0])
         nearTriangle.add(this.hinges[1])
         nearTriangle.closed = true
+        nearTriangle.reorient(false, true)
         let farTriangle = new paper.Path()
         farTriangle.add(this.end)
         farTriangle.add(this.hinges[1])
         farTriangle.add(this.hinges[0])
         farTriangle.closed = true
+        farTriangle.reorient(false, true)
         return {
             near: nearTriangle,
             far: farTriangle
@@ -153,9 +182,128 @@ export class FoldSpec {
         quad.add(this.hinges[0])
         quad.add(this.end)
         quad.add(this.hinges[1])
+        quad.reorient(false, true)
         quad.closed = true
         return quad
     }
 
     static readonly triangleApexIndex = 0
 }
+
+/**
+ * Defines a span of fold specs (all the concievable )
+ */
+export class FoldSpecBasis {
+    start: paper.Point
+    basis: paper.Point
+    maxLength: number
+    fullCover: boolean
+    rightToLeft: boolean
+
+    constructor(
+        start: paper.Point,
+        basis: paper.Point,
+        maxLength: number,
+        fullCover: boolean,
+        rightToLeft: boolean
+    ) {
+        this.start = start
+        this.basis = basis
+        this.maxLength = maxLength
+        this.fullCover = fullCover
+        this.rightToLeft = rightToLeft
+    }
+
+    static getAllBases(path: paper.Path, clockwise: boolean, fullCover: boolean) {
+        if (!fullCover) {
+            throw new Error("FoldSpecBasis.getAllBases() is only implemented for full cover folds.")
+        }
+        let bases: FoldSpecBasis[] = []
+        let pointPairs: [paper.Point, paper.Point][] = []
+        if (clockwise) {
+            for (let segment of path.segments) {
+                pointPairs.push([segment.point, segment.next.point])
+            }
+        } else {
+            for (let segment of path.segments.slice().reverse()) {
+                pointPairs.push([segment.point, segment.previous.point])
+            }
+        }
+
+        for (let [start, end] of pointPairs) {
+            let attempt = FoldSpecBasis.fromEdgeVertexWithFullCover(start, end, clockwise)
+            if (attempt != null) {
+                bases.push(attempt)
+            }
+        }
+        return bases
+    }
+
+    static fromEdgeVertexWithFullCover(
+        fromVertex: paper.Point,
+        toVertex: paper.Point,
+        rightToLeft: boolean
+    ) {
+        let segmentVector = toVertex.subtract(fromVertex)
+        let hingeBasis = fullCoverHingeBasisAlongVector(fromVertex, segmentVector)
+        if (hingeBasis === null) {
+            return null
+        }
+        return new FoldSpecBasis(fromVertex, hingeBasis, segmentVector.length, true, rightToLeft)
+    }
+
+    compile() {
+        if (!this.fullCover) {
+            throw new Error("FoldSpecBasis.compile() is only implemented for full cover folds.")
+        }
+        let multiplier = Math.floor(this.maxLength / this.basis.length)
+        let result: FoldSpec[] = []
+        for (let i = 1; i <= multiplier; i++) {
+            let hingeVector = this.basis.multiply(i)
+            let innerApex = roundToHalfIntegers(
+                this.start.add(
+                    hingeVector.rotate(45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2)
+                )
+            )
+            let outerApex = roundToHalfIntegers(
+                this.start.add(
+                    hingeVector.rotate(-45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2)
+                )
+            )
+            if (!this.rightToLeft) {
+                // If the fold is right-to-left, we need to swap the inner and outer apexes
+                ;[innerApex, outerApex] = [outerApex, innerApex]
+            }
+
+            let foldSpec = new FoldSpec(
+                innerApex,
+                [this.start, this.start.add(hingeVector)],
+                outerApex
+            )
+            result.push(foldSpec)
+        }
+        return result
+    }
+}
+
+// export function findLargestFullFoldAlongSegment(segment: paper.Segment): FoldSpec | null {
+//     let segmentVector = segment.next.point.subtract(segment.point)
+//     let hingeBasis = fullCoverHingeBasisAlongVector(segment.point, segmentVector)
+//     if (hingeBasis === null) {
+//         return null
+//     }
+//     let multiplier = Math.floor(segmentVector.length / hingeBasis.length)
+//     let hingeVector = hingeBasis.multiply(multiplier)
+//     let innerApex = segment.point.add(
+//         hingeVector.rotate(45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2)
+//     )
+//     let outerApex = segment.point.add(
+//         hingeVector.rotate(-45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2)
+//     )
+//     let foldSpec = new FoldSpec(
+//         innerApex,
+//         [segment.point, segment.point.add(hingeVector)],
+//         outerApex
+//     )
+//     return foldSpec
+// }

@@ -195,6 +195,41 @@ export function squareDiagonalsFromVertex(vertex: paper.Point): paper.Point[] {
     return rotatedRays
 }
 
+export function fullCoverHingeBasisAlongVector(
+    origin: paper.Point,
+    vector: paper.Point
+): paper.Point | null {
+    // Check the origin is on the lattice.
+    if (!isOnTetrakisLattice(origin)) {
+        throw new Error(`Invalid origin coordinates: (${origin.x}, ${origin.y})`)
+    }
+    // Check the vector is either axis-aligned or diagonal.
+    let isAxisAligned = vector.x == 0 || vector.y == 0
+    if (!isAxisAligned) {
+        if (Math.abs(vector.x) != Math.abs(vector.y)) {
+            throw new Error(`Vector not perfectly diagonal: (${vector.x}, ${vector.y})`)
+        }
+    }
+    // Check that the vector is not axis-aligned if it's at half-integer coordinates.
+    if (!isIntegerCoordinate(origin)) {
+        if (isAxisAligned) {
+            throw new Error(
+                `Only diagonal vectors are allowed at half-integer coordinates: (${origin.x}, ${origin.y}) with vector (${vector.x}, ${vector.y})`
+            )
+        }
+        // Full Cover flaps cannot be generated here because they require grid lines at
+        // 45-degrees from the hinge (so axis-aligned), but points at half-integer
+        // only have diagonal grid lines.
+        return null
+    }
+    let length = isAxisAligned ? 1 : Math.sqrt(2)
+    if (length > vector.length) {
+        // Discard the spans that are longer than the vector (they're useless)
+        return null
+    }
+    return vector.normalize().multiply(length)
+}
+
 export function areHalfCoversValid(vertex: paper.Point, ray: paper.Point) {
     // Cases:
     // If the vertex is on the corners of the squares

@@ -49,8 +49,7 @@ export class ContactViz {
             this.latticeVizPoints.push({ point: vertex, circle })
         }
 
-        this.board.onShapeUpdate = this.onShapeUpdate.bind(this)
-        this.onShapeUpdate()
+        this.board.addShapeUpdateListener(this.onShapeUpdate.bind(this))
     }
 
     onShapeUpdate() {

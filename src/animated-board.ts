@@ -88,10 +88,6 @@ export class Board {
     }[] = []
     private random: PRNG
     private shapeUpdateListeners: Array<() => void> = []
-    /**
-     * @deprecated Use addShapeUpdateListener instead
-     */
-    onShapeUpdate = () => {}
     speedFactor = 1
 
     constructor(shapesLayer: paper.Layer, animationLayer: paper.Layer, random: PRNG) {
@@ -110,7 +106,6 @@ export class Board {
         for (const listener of this.shapeUpdateListeners) {
             listener()
         }
-        this.onShapeUpdate()
     }
 
     private makePastelColor() {
@@ -346,5 +341,22 @@ export class Board {
         }
         // At the end of this method, after any shape changes:
         this.notifyShapeUpdateListeners()
+    }
+
+    addShape(id: number, path: paper.Path) {
+        if (this.shapes.has(id)) {
+            throw new Error(`Shape with ID ${id} already exists`)
+        }
+        let shape = path.clone()
+        shape.closed = true
+        shape.reorient(false, true)
+        shape.data.id = id
+        if (!shape.fillColor) {
+            shape.fillColor = new paper.Color(this.makePastelColor())
+        }
+        this.shapes.set(id, shape)
+        this.shapesLayer.addChild(shape)
+        this.notifyShapeUpdateListeners()
+        return shape
     }
 }

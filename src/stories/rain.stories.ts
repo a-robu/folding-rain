@@ -177,7 +177,7 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
         bounds,
         zoom: 55,
         pixelWidth: 800,
-        pixelheight: 800,
+        pixelHeight: 800,
         drawGridLines: args.drawGridLines,
         latticeAvailability: args.latticeAvailability,
         latticeContactid: args.latticeContactid,

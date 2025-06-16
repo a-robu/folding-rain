@@ -1,6 +1,6 @@
 import paper from "paper"
 import { Board } from "@/animated-board"
-import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold"
+import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold-spec"
 import { sleep } from "@/lib/time"
 import { rigamarole } from "./rigamarole"
 import { withCommonArgs } from "./common-args"

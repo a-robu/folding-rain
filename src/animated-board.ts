@@ -6,7 +6,7 @@ import {
     FOLD_TEMPLATES,
     FoldSpec,
     SHAPE_CHANGE
-} from "@/lib/fold"
+} from "@/lib/fold-spec"
 import { cosineEase, easeOutBounce } from "./lib/easing-functions"
 import type PRNG from "random-seedable/@types/PRNG"
 import randomColor from "randomcolor"

@@ -1,7 +1,8 @@
 import paper from "paper"
-import { FoldSpec, FoldSpecBasis } from "@/lib/fold"
+import { FoldSpec } from "@/lib/fold-spec"
 import { rigamarole } from "./rigamarole"
 import { withCommonArgs, type CommonStoryArgs } from "./common-args"
+import { FoldSpecBasis } from "@/lib/fold-spec-basis"
 
 export default {
     title: "Candidates"
@@ -75,7 +76,7 @@ export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs
     let cwFoldSpecs: FoldSpec[] = []
     for (let foldBase of cwFoldBases) {
         drawArrow(annotationsLayer, foldBase.start, foldBase.basis)
-        let foldSpecs = foldBase.compile()
+        let foldSpecs = foldBase.getAll()
         cwFoldSpecs.push(...foldSpecs)
         for (let foldSpec of foldSpecs) {
             annotateFold(annotationsLayer, foldSpec)
@@ -90,7 +91,46 @@ export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs
     let ccwFoldSpecs: FoldSpec[] = []
     for (let foldBase of ccwFoldBases) {
         drawArrow(annotationsLayer, foldBase.start, foldBase.basis)
-        let foldSpecs = foldBase.compile()
+        let foldSpecs = foldBase.getAll()
+        ccwFoldSpecs.push(...foldSpecs)
+        for (let foldSpec of foldSpecs) {
+            annotateFold(annotationsLayer, foldSpec)
+        }
+    }
+
+    return container
+})
+
+export const partialCover = withCommonArgs(function partialCover(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(-2, 0, 9, 13)
+    let { container, board, annotationsLayer } = rigamarole({
+        bounds,
+        zoom: 50,
+        ...args
+    })
+
+    let shape = board.addShape(1, MOAP())
+
+    let cwFoldBases = FoldSpecBasis.getAllBases(shape, true, false)
+    let cwFoldSpecs: FoldSpec[] = []
+    for (let foldBase of cwFoldBases) {
+        drawArrow(annotationsLayer, foldBase.start, foldBase.basis)
+        let foldSpecs = foldBase.getAll()
+        cwFoldSpecs.push(...foldSpecs)
+        for (let foldSpec of foldSpecs) {
+            annotateFold(annotationsLayer, foldSpec)
+        }
+    }
+
+    let secondShape = shape.clone()
+    secondShape.translate(new paper.Point(0, 6))
+    secondShape = board.addShape(2, secondShape)
+
+    let ccwFoldBases = FoldSpecBasis.getAllBases(secondShape, false, false)
+    let ccwFoldSpecs: FoldSpec[] = []
+    for (let foldBase of ccwFoldBases) {
+        drawArrow(annotationsLayer, foldBase.start, foldBase.basis)
+        let foldSpecs = foldBase.getAll()
         ccwFoldSpecs.push(...foldSpecs)
         for (let foldSpec of foldSpecs) {
             annotateFold(annotationsLayer, foldSpec)

@@ -1,5 +1,5 @@
 import paper from "paper"
-import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold"
+import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold-spec"
 import { rigamarole } from "./rigamarole"
 import { sleep } from "@/lib/time"
 import { getSegmentAngle } from "@/lib/vec"

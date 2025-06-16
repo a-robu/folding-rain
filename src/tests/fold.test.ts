@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import paper from "paper"
-import { FOLD_COVER, FoldSpec } from "../lib/fold"
+import { FOLD_COVER, FoldSpec } from "../lib/fold-spec"
 
 describe("FoldSpec", () => {
     describe("fromEndPoints", () => {

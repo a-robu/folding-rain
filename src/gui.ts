@@ -1,4 +1,4 @@
-import { createFold, makePathFromUnfoldPlan } from "./lib/fold"
+import { createFold, makePathFromUnfoldPlan } from "./lib/fold-spec"
 import { Game } from "./game"
 import { Board } from "./board"
 import paper from "paper"

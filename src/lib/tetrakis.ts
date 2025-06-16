@@ -1,5 +1,9 @@
 import paper from "paper"
-import { FOLD_COVER, type FoldCover } from "./fold"
+
+export type LinearEquation = {
+    constant: number
+    coefficient: number
+}
 
 export const SIDE = {
     N: "N",
@@ -195,10 +199,11 @@ export function squareDiagonalsFromVertex(vertex: paper.Point): paper.Point[] {
     return rotatedRays
 }
 
-export function fullCoverHingeBasisAlongVector(
+export function validHingeLengths(
     origin: paper.Point,
-    vector: paper.Point
-): paper.Point | null {
+    vector: paper.Point,
+    fullCover: boolean
+): LinearEquation | null {
     // Check the origin is on the lattice.
     if (!isOnTetrakisLattice(origin)) {
         throw new Error(`Invalid origin coordinates: (${origin.x}, ${origin.y})`)
@@ -210,24 +215,38 @@ export function fullCoverHingeBasisAlongVector(
             throw new Error(`Vector not perfectly diagonal: (${vector.x}, ${vector.y})`)
         }
     }
-    // Check that the vector is not axis-aligned if it's at half-integer coordinates.
     if (!isIntegerCoordinate(origin)) {
+        // Middle of the squares
         if (isAxisAligned) {
             throw new Error(
                 `Only diagonal vectors are allowed at half-integer coordinates: (${origin.x}, ${origin.y}) with vector (${vector.x}, ${vector.y})`
             )
         }
-        // Full Cover flaps cannot be generated here because they require grid lines at
-        // 45-degrees from the hinge (so axis-aligned), but points at half-integer
-        // only have diagonal grid lines.
-        return null
+        if (fullCover) {
+            // Full Cover flaps cannot be generated here because they require grid lines at
+            // 45-degrees from the hinge (so axis-aligned), but points at half-integer
+            // only have diagonal grid lines.
+            return null
+        } else {
+            return {
+                constant: Math.SQRT2 / 2,
+                coefficient: Math.SQRT2
+            }
+        }
     }
-    let length = isAxisAligned ? 1 : Math.sqrt(2)
-    if (length > vector.length) {
-        // Discard the spans that are longer than the vector (they're useless)
-        return null
+    if (isAxisAligned) {
+        // Corners of the squares, axis-aligned
+        return {
+            constant: 0,
+            coefficient: 1
+        }
+    } else {
+        // Corners of the squares, diagonal
+        return {
+            constant: 0,
+            coefficient: Math.sqrt(2)
+        }
     }
-    return vector.normalize().multiply(length)
 }
 
 export function areHalfCoversValid(vertex: paper.Point, ray: paper.Point) {

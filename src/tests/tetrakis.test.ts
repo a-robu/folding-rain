@@ -15,7 +15,7 @@ import {
     SIDE,
     areHalfCoversValid
 } from "@/lib/tetrakis"
-import { FOLD_COVER } from "@/lib/fold"
+import { FOLD_COVER } from "@/lib/fold-spec"
 
 describe("triangleIdxToKey / triangleIdxFromKey", () => {
     test("converts TriangleIdx to key and back", () => {

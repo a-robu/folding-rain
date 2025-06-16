@@ -7,10 +7,9 @@ import {
     FOLD_COVERS,
     FOLD_TEMPLATES,
     FoldSpec,
-    FoldSpecBasis,
     SHAPE_CHANGE,
     type FoldAction
-} from "@/lib/fold"
+} from "@/lib/fold-spec"
 import { normalise, randomChoiceWeighted } from "@/lib/randomness"
 import { rigamarole } from "./rigamarole"
 import { exponentialDelay, sleep } from "@/lib/time"
@@ -23,15 +22,15 @@ import {
 } from "@/lib/tetrakis"
 import { withCommonArgs } from "./common-args"
 import type { CommonStoryArgs } from "./common-args"
+import { FoldSpecBasis } from "@/lib/fold-spec-basis"
 
 export default {
-    title: "Rain"
+    title: "Simulations"
 }
 
 function randomlyChooseFullFold(shape: paper.Path, random: PRNG): FoldSpec | null {
     let clockwise = random.bool()
-    // let clockwise = false
-    let foldBases = FoldSpecBasis.getAllBases(shape, clockwise, true)
+    let foldBases = FoldSpecBasis.getAllBases(shape, clockwise, false)
     if (foldBases.length == 0) {
         return null
     }

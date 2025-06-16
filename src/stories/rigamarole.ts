@@ -13,8 +13,8 @@ declare global {
 export function rigamarole({
     bounds = new paper.Rectangle(0, 0, 5, 5),
     zoom = 50,
-    pixelWidth = 400,
-    pixelHeight: pixelheight = 400,
+    pixelWidth,
+    pixelHeight,
     drawGridLines = true,
     latticeAvailability = false,
     latticeContactid = false,
@@ -33,13 +33,16 @@ export function rigamarole({
     showShapeId?: boolean
     showVertexLabels?: "off" | "vertexId" | "vertexAngle"
 } = {}) {
+    // Automatically determine pixelWidth and pixelHeight if not provided
+    const computedPixelWidth = pixelWidth ?? Math.round(bounds.width * zoom)
+    const computedPixelHeight = pixelHeight ?? Math.round(bounds.height * zoom)
     // Create the canvas and bind paper.js to it
     const container = document.createElement("div")
-    container.style.width = `${pixelWidth}px`
-    container.style.height = `${pixelheight}px`
+    container.style.width = `${computedPixelWidth}px`
+    container.style.height = `${computedPixelHeight}px`
     const canvas = document.createElement("canvas")
-    canvas.width = pixelWidth
-    canvas.height = pixelheight
+    canvas.width = computedPixelWidth
+    canvas.height = computedPixelHeight
     canvas.style.outline = "2px solid #ddd"
     canvas.style.borderRadius = "2px"
     container.appendChild(canvas)
@@ -67,46 +70,60 @@ export function rigamarole({
 
     // Vertex label visualization
     let vertexLabelsGroup: paper.Group | undefined
+    function updateVertexLabelsForAllShapes() {
+        if (!vertexLabelsGroup) return
+        vertexLabelsGroup.removeChildren()
+        for (const shape of board.shapes.values()) {
+            shape.segments.forEach((segment, index) => {
+                let circle = new paper.Path.Circle({
+                    center: segment.point,
+                    radius: 0.15,
+                    fillColor: "white",
+                    strokeColor: "black",
+                    strokeWidth: 0.02
+                })
+                if (vertexLabelsGroup) vertexLabelsGroup.addChild(circle)
+                let labelContent: string | number = ""
+                if (showVertexLabels === "vertexId") {
+                    labelContent = index
+                } else if (showVertexLabels === "vertexAngle") {
+                    const prev = shape.segments[index].previous.point.subtract(segment.point)
+                    const next = shape.segments[index].next.point.subtract(segment.point)
+                    const angle = Math.round(
+                        (Math.acos(prev.normalize().dot(next.normalize())) * 180) / Math.PI
+                    )
+                    labelContent = angle
+                }
+                let label = new paper.PointText({
+                    content: labelContent,
+                    point: segment.point.add(new paper.Point(0, 0.05)),
+                    fillColor: "black",
+                    fontSize: 0.2,
+                    justification: "center"
+                })
+                if (vertexLabelsGroup) vertexLabelsGroup.addChild(label)
+            })
+        }
+    }
+
+    function setShowVertexLabels(newValue: "off" | "vertexId" | "vertexAngle") {
+        showVertexLabels = newValue
+        if (vertexLabelsGroup) {
+            vertexLabelsGroup.remove()
+            vertexLabelsGroup = undefined
+        }
+        if (showVertexLabels !== "off") {
+            vertexLabelsGroup = new paper.Group()
+            updateVertexLabelsForAllShapes()
+            board.addShapeUpdateListener(updateVertexLabelsForAllShapes)
+        }
+    }
+
+    // Initialize if not off
     if (showVertexLabels !== "off") {
         vertexLabelsGroup = new paper.Group()
-        function updateVertexLabelsForAllShapes() {
-            vertexLabelsGroup!.removeChildren()
-            for (const shape of board.shapes.values()) {
-                shape.segments.forEach((segment, index) => {
-                    let circle = new paper.Path.Circle({
-                        center: segment.point,
-                        radius: 0.15,
-                        fillColor: "white",
-                        strokeColor: "black",
-                        strokeWidth: 0.02
-                    })
-                    vertexLabelsGroup!.addChild(circle)
-                    let labelContent: string | number = ""
-                    if (showVertexLabels === "vertexId") {
-                        labelContent = index
-                    } else if (showVertexLabels === "vertexAngle") {
-                        // Angle between next and previous segments at this vertex
-                        const prev = shape.segments[index].previous.point.subtract(segment.point)
-                        const next = shape.segments[index].next.point.subtract(segment.point)
-                        const angle = Math.round(
-                            (Math.acos(prev.normalize().dot(next.normalize())) * 180) / Math.PI
-                        )
-                        labelContent = angle
-                    }
-                    let label = new paper.PointText({
-                        content: labelContent,
-                        point: segment.point.add(new paper.Point(0, 0.05)),
-                        fillColor: "black",
-                        fontSize: 0.2,
-                        justification: "center"
-                    })
-                    vertexLabelsGroup!.addChild(label)
-                })
-            }
-        }
-        board.addShapeUpdateListener(() => {
-            updateVertexLabelsForAllShapes()
-        })
+        updateVertexLabelsForAllShapes()
+        board.addShapeUpdateListener(updateVertexLabelsForAllShapes)
     }
 
     return {
@@ -115,6 +132,7 @@ export function rigamarole({
         annotationsLayer,
         contactViz: contactVizInstance,
         labelViz: labelVizInstance,
-        vertexLabelsGroup
+        vertexLabelsGroup,
+        setShowVertexLabels
     }
 }

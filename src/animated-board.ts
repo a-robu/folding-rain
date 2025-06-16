@@ -10,6 +10,7 @@ import {
 import { cosineEase, easeOutBounce } from "./lib/easing-functions"
 import type PRNG from "random-seedable/@types/PRNG"
 import randomColor from "randomcolor"
+import { isHalfIntegerCoordinate, roundToHalfIntegers } from "./lib/tetrakis"
 
 class FoldAnimation {
     flap: paper.Path
@@ -275,18 +276,18 @@ export class Board {
     }
 
     private applyTriangleUpdate(shapeId: number, triangle: paper.Path, shapeChange: ShapeChange) {
-        console.log(
-            "Applying triangle update:",
-            shapeId,
-            triangle.segments.map(s => [s.point.x, s.point.y]),
-            shapeChange
-        )
+        for (let segment of triangle.segments) {
+            if (!isHalfIntegerCoordinate(segment.point)) {
+                throw new Error(
+                    `Triangle segment point ${segment.point} is not a half-integer coordinate`
+                )
+            }
+        }
         if (shapeChange == SHAPE_CHANGE.Keep) {
             return
         }
         if (shapeChange == SHAPE_CHANGE.Remove) {
             // A triangle is being removed from a shape
-            console.log("Removing triangle from shape with ID:", shapeId)
             let shape = this.shapes.get(shapeId)
             if (!shape) {
                 throw new Error(`Shape with ID ${shapeId} does not exist`)
@@ -294,43 +295,34 @@ export class Board {
             let result = shape.subtract(triangle) as paper.Path
             if (result.segments.length == 0) {
                 // It shrunk to nothingless, bye
-                console.log("Shape shrunk to nothing, removing it")
                 this.shapes.delete(shapeId)
                 shape.remove()
                 result.remove()
             } else {
                 // Swap the old shape with the new one that was created
-                console.log(
-                    "Shape shrunk after removing triangle, updating it, #segments:",
-                    `${shape.segments.length} -> ${result.segments.length}`
-                )
                 shape.remove()
                 result.reorient(false, true)
+                result.flatten(0.1)
                 this.shapes.set(shapeId, result)
                 this.shapesLayer.addChild(result)
             }
         } else if (shapeChange == SHAPE_CHANGE.Add) {
             // A triangle is being added to a shape
-            console.log("Adding triangle to shape with ID:", shapeId)
             let shape = this.shapes.get(shapeId)
             if (shape) {
                 // The shape already exists, we just add the triangle to it
-                console.log("Shape already exists, uniting with triangle")
                 let result = shape.unite(triangle) as paper.Path
-                console.log(
-                    "Shape grew after adding triangle, updating it, #segments:",
-                    `${shape.segments.length} -> ${result.segments.length}`
-                )
                 result.reorient(false, true)
+                result.flatten(0.1)
                 this.shapes.set(shapeId, result)
                 this.shapesLayer.addChild(result)
                 // shape.visible = false
                 shape.remove()
             } else {
                 // The shape does not exist, we create it
-                console.log("Shape does not exist, creating it")
                 let created = triangle.clone()
                 created.reorient(false, true)
+                created.flatten(0.1)
                 created.fillColor = new paper.Color(this.makePastelColor())
                 created.data.id = shapeId
                 this.shapes.set(shapeId, created)
@@ -338,6 +330,11 @@ export class Board {
             }
         } else {
             throw new Error("Unrecognized color transition: " + `${shapeChange}`)
+        }
+        for (let segment of this.shapes.get(shapeId)!.segments) {
+            if (!isHalfIntegerCoordinate(segment.point)) {
+                segment.point = roundToHalfIntegers(segment.point)
+            }
         }
         // At the end of this method, after any shape changes:
         this.notifyShapeUpdateListeners()

@@ -252,37 +252,49 @@ export class FoldSpecBasis {
         return new FoldSpecBasis(fromVertex, hingeBasis, segmentVector.length, true, rightToLeft)
     }
 
+    maxMultiplier() {
+        if (!this.fullCover) {
+            throw new Error(
+                "FoldSpecBasis.maxMultiplier() is only implemented for full cover folds."
+            )
+        }
+        return Math.floor(this.maxLength / this.basis.length)
+    }
+
     compile() {
         if (!this.fullCover) {
             throw new Error("FoldSpecBasis.compile() is only implemented for full cover folds.")
         }
-        let multiplier = Math.floor(this.maxLength / this.basis.length)
         let result: FoldSpec[] = []
-        for (let i = 1; i <= multiplier; i++) {
-            let hingeVector = this.basis.multiply(i)
-            let innerApex = roundToHalfIntegers(
-                this.start.add(
-                    hingeVector.rotate(45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2)
-                )
-            )
-            let outerApex = roundToHalfIntegers(
-                this.start.add(
-                    hingeVector.rotate(-45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2)
-                )
-            )
-            if (!this.rightToLeft) {
-                // If the fold is right-to-left, we need to swap the inner and outer apexes
-                ;[innerApex, outerApex] = [outerApex, innerApex]
-            }
-
-            let foldSpec = new FoldSpec(
-                innerApex,
-                [this.start, this.start.add(hingeVector)],
-                outerApex
-            )
-            result.push(foldSpec)
+        for (let i = 1; i <= this.maxMultiplier(); i++) {
+            result.push(this.atMultiplier(i))
         }
         return result
+    }
+
+    atMultiplier(multiplier: number): FoldSpec {
+        if (!this.fullCover) {
+            throw new Error(
+                "FoldSpecBasis.atMultiplier() is only implemented for full cover folds."
+            )
+        }
+        let hingeVector = this.basis.multiply(multiplier)
+        let innerApex = roundToHalfIntegers(
+            this.start.add(hingeVector.rotate(45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2))
+        )
+        let outerApex = roundToHalfIntegers(
+            this.start.add(hingeVector.rotate(-45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2))
+        )
+        if (!this.rightToLeft) {
+            // If the fold is right-to-left, we need to swap the inner and outer apexes
+            ;[innerApex, outerApex] = [outerApex, innerApex]
+        }
+
+        return new FoldSpec(
+            innerApex,
+            [this.start, roundToHalfIntegers(this.start.add(hingeVector))],
+            outerApex
+        )
     }
 }
 

@@ -17,11 +17,7 @@ export const latticeTrianglesAndPoints = withCommonArgs(function latticeTriangle
     let { container, board } = rigamarole({
         bounds,
         zoom: 70,
-        drawGridLines: args.drawGridLines,
-        latticeAvailability: args.latticeAvailability,
-        latticeContactid: args.latticeContactid,
-        showShapeId: args.showShapeId,
-        showVertexLabels: args.showVertexLabels as "off" | "vertexId" | "vertexAngle"
+        ...args
     })
     async function animate() {
         await sleep(300)
@@ -41,12 +37,7 @@ export const wedges = withCommonArgs(function wedges(args: CommonStoryArgs) {
     let { container, board } = rigamarole({
         bounds,
         zoom: 40,
-        drawGridLines: false, //, args.drawGridLines,
-        latticeAvailability: args.latticeAvailability,
-        latticeContactid: args.latticeContactid,
-        speedFactor: 3,
-        showShapeId: args.showShapeId,
-        showVertexLabels: args.showVertexLabels as "off" | "vertexId" | "vertexAngle"
+        ...args
     })
     async function animate() {
         await sleep(300)
@@ -79,7 +70,6 @@ export const wedges = withCommonArgs(function wedges(args: CommonStoryArgs) {
                 (segment, _) => getSegmentAngle(segment) == 45
             )
             if (first90Index != -1) {
-                console.log("First 90 segment found at index", first90Index)
                 let first90Segment = shape.segments[first90Index]
                 let towardsPrev = first90Segment.previous.point.subtract(first90Segment.point)
                 let towardsNext = first90Segment.next.point.subtract(first90Segment.point)
@@ -93,7 +83,6 @@ export const wedges = withCommonArgs(function wedges(args: CommonStoryArgs) {
                 await board.foldAsync(1, foldSpec, FOLD_ACTION.Expand)
             } else if (first45Index != -1) {
                 let first45Segment = shape.segments[first45Index]
-                console.log("First 45 segment found at index", first45Index)
                 let towardsPrev = first45Segment.previous.point.subtract(first45Segment.point)
                 let towardsNext = first45Segment.next.point.subtract(first45Segment.point)
                 let attemptLength = Math.min(towardsPrev.length / Math.sqrt(2), towardsNext.length)

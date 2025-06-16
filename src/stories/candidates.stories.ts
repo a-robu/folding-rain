@@ -66,8 +66,6 @@ export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs
     let { container, board, annotationsLayer } = rigamarole({
         bounds,
         zoom: 50,
-        pixelWidth: 500,
-        pixelHeight: 800,
         ...args
     })
 
@@ -84,7 +82,7 @@ export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs
         }
     }
 
-    let secondShape = MOAP()
+    let secondShape = shape.clone()
     secondShape.translate(new paper.Point(0, 6))
     secondShape = board.addShape(2, secondShape)
 

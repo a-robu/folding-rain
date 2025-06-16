@@ -1,7 +1,16 @@
 import type PRNG from "random-seedable/@types/PRNG"
 import { XORShift } from "random-seedable"
 import paper from "paper"
-import { FOLD_ACTION, FOLD_COVER, FOLD_COVERS, FoldSpec } from "@/lib/fold"
+import {
+    FOLD_ACTION,
+    FOLD_COVER,
+    FOLD_COVERS,
+    FOLD_TEMPLATES,
+    FoldSpec,
+    FoldSpecBasis,
+    SHAPE_CHANGE,
+    type FoldAction
+} from "@/lib/fold"
 import { normalise, randomChoiceWeighted } from "@/lib/randomness"
 import { rigamarole } from "./rigamarole"
 import { exponentialDelay, sleep } from "@/lib/time"
@@ -19,116 +28,17 @@ export default {
     title: "Rain"
 }
 
-function tryExpand(board: Board, random: PRNG) {
-    if (board.shapes.size == 0) {
-        console.log("No shapes to expand.")
-        return
+function randomlyChooseExpansion(shape: paper.Path, random: PRNG): FoldSpec | null {
+    let clockwise = random.bool()
+    let foldBases = FoldSpecBasis.getAllBases(shape, clockwise, true)
+    if (foldBases.length == 0) {
+        return null
     }
-
-    for (let attempt = 0; attempt < 10; attempt++) {
-        // Pick a random shape
-        let shapeId = random.choice(Array.from(board.shapes.keys()))
-        let shape = board.shapes.get(shapeId)!
-        if (!shape || shape.segments.length < 2) {
-            console.log("Shape is missing or has less than 2 segments.", shapeId)
-            continue
-        }
-
-        // Pick a random edge (segment)
-        let segIdx = Math.abs(random.int()) % shape.segments.length
-        let segA = shape.segments[segIdx]
-        let segB = segA.next
-        let A = segA.point
-        let B = segB.point
-        let baseVec = B.subtract(A)
-        if (baseVec.length === 0) {
-            console.log("Base vector has zero length.", A, B)
-            continue
-        }
-
-        let best = null
-        let bestScale = 0
-        // Only try the outward direction for clockwise polygons: sign = 1
-        let sign = 1
-        for (let scale = 0.5; scale <= 6; scale += 0.5) {
-            let perp = baseVec
-                .rotate(90 * sign, new paper.Point(0, 0))
-                .normalize(baseVec.length * scale)
-            let apex = A.add(baseVec.multiply(0.5)).add(perp.multiply(0.5 / baseVec.length))
-            apex = roundToHalfIntegers(apex)
-
-            // For expansion, apex should be OUTSIDE the shape
-            if (shape.contains(apex)) {
-                console.log("Apex is inside shape (should be outside for expansion):", {
-                    apex: apex.toString(),
-                    A: A.toString(),
-                    B: B.toString(),
-                    baseVec: baseVec.toString(),
-                    baseVecLength: baseVec.length,
-                    scale,
-                    sign,
-                    perp: perp.toString(),
-                    apexMidpoint: A.add(baseVec.multiply(0.5)).toString(),
-                    apexOffset: perp.multiply(0.5 / baseVec.length).toString(),
-                    shapeId,
-                    segIdx
-                })
-                break
-            }
-
-            // Build the triangle path
-            let tri = new paper.Path([A, B, apex])
-            tri.closed = true
-
-            // Check if triangle overlaps the shape except for the base edge
-            // We'll check that the triangle does not contain any points inside the shape except A and B
-            let triMid1 = tri.getPointAt(tri.length * 0.25)
-            let triMid2 = tri.getPointAt(tri.length * 0.75)
-            if (shape.contains(triMid1) || shape.contains(triMid2)) {
-                console.log("Triangle overlaps shape at scale", scale, "sign", sign)
-                tri.remove()
-                break
-            }
-
-            // If valid, keep as best so far
-            if (scale > bestScale) {
-                best = { apex, sign, scale }
-                bestScale = scale
-            }
-            tri.remove()
-        }
-        if (best) {
-            // Compute the reflection of apex across the edge AB
-            let { apex } = best
-            let AB = B.subtract(A)
-            let mid = A.add(AB.multiply(0.5))
-            let apexToMid = mid.subtract(apex)
-            let end = mid.add(apexToMid)
-            end = roundToHalfIntegers(end)
-
-            // Check for collisions with other shapes (for the new triangle to be added)
-            let newTri = new paper.Path([A, B, end])
-            newTri.closed = true
-            let contacts = board.findPolygonContacts(newTri)
-            if (contacts.shapeIds.length > 0 || contacts.lockShapeIds.length > 0) {
-                console.log("Collision detected for new triangle at edge", segIdx, "end:", end)
-                newTri.remove()
-                continue
-            }
-
-            // Use apex as start, [A, B] as hinges, end as end
-            console.log("Expanding shape", shapeId, "at edge", segIdx, "apex:", apex, "end:", end)
-            let unfoldPlan = new FoldSpec(apex, [A, B], end)
-            board.fold(shapeId, unfoldPlan, FOLD_ACTION.Expand)
-            newTri.remove()
-            return
-        } else {
-            console.log("No valid expansion found for shape", shapeId)
-        }
-    }
+    let basis = random.choice(foldBases) as FoldSpecBasis
+    return basis.atMultiplier(basis.maxMultiplier())
 }
 
-function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG) {
+function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise<void> | null {
     for (let attempt = 0; attempt < 10; attempt++) {
         let startVertex = random.choice(allVertices(bounds))
         let ray = random.choice(squareDiagonalsFromVertex(startVertex))
@@ -166,9 +76,9 @@ function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG) {
         // }
 
         let unusedIndex = board.shapes.size == 0 ? 1 : Math.max(...board.shapes.keys()) + 1
-        board.fold(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
-        return
+        return board.foldAsync(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
     }
+    return null
 }
 
 export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
@@ -178,19 +88,143 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
         zoom: 55,
         pixelWidth: 800,
         pixelHeight: 800,
-        drawGridLines: args.drawGridLines,
-        latticeAvailability: args.latticeAvailability,
-        latticeContactid: args.latticeContactid,
-        showShapeId: args.showShapeId
+        ...args,
+        speedFactor: 0.5
     })
     async function doFolds() {
         let random = new XORShift(123456789)
-        tryCreate(board, bounds, random)
-        for (let i = 0; i < 10; i++) {
-            tryExpand(board, random)
+        let expansionRandom = new XORShift(123456789)
+        let creating = tryCreate(board, bounds, random)
+        if (creating) {
+            await creating
+            while (true) {
+                // Log a complete backup of the board (all current polygons)
+                // as a JSON in the requested format: { id: [[x, y], ...], ... }
+                // const shapesObj = Object.fromEntries(
+                //     Array.from(board.shapes.entries()).map(([id, shape]) => [
+                //         id,
+                //         shape.segments.map(seg => [seg.point.x, seg.point.y])
+                //     ])
+                // )
+                // console.log("Current board state:", JSON.stringify(shapesObj, null, 2))
+                let shapeId = random.choice(Array.from(board.shapes.keys()))
+                let shape = board.shapes.get(shapeId)!
+                let foldSpec = randomlyChooseExpansion(shape, expansionRandom)
+                if (!foldSpec) {
+                    break
+                }
+                let expansion = board.foldAsync(shapeId, foldSpec, FOLD_ACTION.Expand)
+                if (expansion) {
+                    await expansion
+                } else {
+                    break
+                }
+            }
         }
-        await sleep(1000)
     }
     doFolds()
+    return container
+})
+
+function visualiseFoldSpec(
+    annotationsLayer: paper.Layer,
+    foldSpec: FoldSpec,
+    foldAction: FoldAction
+) {
+    // do them as transparent gray triangles,
+    // bit with a + or - sign in the middle (for add or remove) for each triangle
+    let foldSpecTriangles = foldSpec.toTriangles()
+    let foldTemplate = FOLD_TEMPLATES[foldAction]
+    let symbol = {
+        [SHAPE_CHANGE.Add]: "+",
+        [SHAPE_CHANGE.Remove]: "-",
+        [SHAPE_CHANGE.Keep]: "•"
+    }
+    let hingeCenter = foldSpec.hinges[0].add(foldSpec.hinges[1]).divide(2)
+    let midpoints = {
+        near: foldSpec.start.add(hingeCenter).divide(2),
+        far: foldSpec.end.add(hingeCenter).divide(2)
+    }
+    for (let side of ["near", "far"] as const) {
+        let triangle = foldSpecTriangles[side]
+        let clone = triangle.clone()
+        let shapeChange = foldTemplate[side]
+        if (shapeChange == SHAPE_CHANGE.Keep) {
+            clone.strokeColor = new paper.Color("#555a")
+            clone.strokeWidth = 0.03
+            clone.dashArray = [0.1, 0.04]
+        } else if (shapeChange == SHAPE_CHANGE.Add) {
+            clone.fillColor = new paper.Color("#0f06")
+        } else if (shapeChange == SHAPE_CHANGE.Remove) {
+            clone.fillColor = new paper.Color("#f006")
+        }
+        annotationsLayer.addChild(clone)
+        let text = new paper.PointText({
+            content: symbol[shapeChange],
+            point: midpoints[side].add(new paper.Point(0, 0.13)),
+            fillColor: "#555a",
+            fontSize: 0.4,
+            justification: "center"
+        })
+        annotationsLayer.addChild(text)
+    }
+}
+
+export const progression = withCommonArgs(function progression(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(-2, -1, 7, 40)
+    let { container, board, annotationsLayer } = rigamarole({
+        bounds,
+        zoom: 55,
+        ...args,
+        speedFactor: 0.5
+    })
+    board.foldInstantaneously(
+        1,
+        FoldSpec.fromEndPoints(new paper.Point(2, 1), new paper.Point(0, 1), FOLD_COVER.Right),
+        FOLD_ACTION.Create
+    )
+    function pickFoldSpec(shape: paper.Path): FoldSpec | null {
+        let foldBases = FoldSpecBasis.getAllBases(shape, true, true)
+        if (foldBases.length == 0) {
+            return null
+        }
+        let basis = foldBases[0]
+        return basis.atMultiplier(basis.maxMultiplier())
+    }
+    let expansionRandom = new XORShift(123456789)
+    for (let i = 1; i <= 100; i++) {
+        let oldShape = board.shapes.get(i)!
+        let foldSpec = randomlyChooseExpansion(oldShape, expansionRandom)
+        if (foldSpec == null) {
+            break
+        }
+        visualiseFoldSpec(annotationsLayer, foldSpec, FOLD_ACTION.Expand)
+        let foldSpecTriangles = foldSpec.toTriangles()
+        // for (let triangle of Object.values(foldSpecTriangles)) {
+        //     let clone = triangle.clone()
+        //     clone.strokeColor = new paper.Color("#7fc60b")
+        //     clone.strokeWidth = 0.05
+        //     annotationsLayer.addChild(clone)
+        // }
+
+        let shapeTop = Math.min(
+            oldShape.bounds.top,
+            foldSpecTriangles.near.bounds.top,
+            foldSpecTriangles.far.bounds.top
+        )
+        let shapeBottom = Math.max(
+            oldShape.bounds.bottom,
+            foldSpecTriangles.near.bounds.bottom,
+            foldSpecTriangles.far.bounds.bottom
+        )
+        let shapeHeight = shapeBottom - shapeTop
+        let offsetY = Math.ceil(shapeHeight + 0.5)
+
+        let initialClone = oldShape.clone()
+        initialClone.translate(new paper.Point(0, offsetY))
+        board.addShape(i + 1, initialClone)
+        let redoneFoldSpec = pickFoldSpec(board.shapes.get(i + 1)!)!
+        board.foldInstantaneously(i + 1, redoneFoldSpec, FOLD_ACTION.Expand)
+    }
     return container
 })

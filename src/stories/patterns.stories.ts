@@ -1,10 +1,11 @@
 import paper from "paper"
 import { Board } from "@/animated-board"
-import { FOLD_ACTION, FoldSpec } from "@/lib/fold"
+import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold"
 import { sleep } from "@/lib/time"
 import { rigamarole } from "./rigamarole"
 import { withCommonArgs } from "./common-args"
 import type { CommonStoryArgs } from "./common-args"
+import { roundToHalfIntegers } from "@/lib/tetrakis"
 
 export default {
     title: "Patterns"

@@ -28,8 +28,9 @@ export default {
     title: "Rain"
 }
 
-function randomlyChooseExpansion(shape: paper.Path, random: PRNG): FoldSpec | null {
+function randomlyChooseFullFold(shape: paper.Path, random: PRNG): FoldSpec | null {
     let clockwise = random.bool()
+    // let clockwise = false
     let foldBases = FoldSpecBasis.getAllBases(shape, clockwise, true)
     if (foldBases.length == 0) {
         return null
@@ -89,7 +90,7 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
         pixelWidth: 800,
         pixelHeight: 800,
         ...args,
-        speedFactor: 0.5
+        speedFactor: 2
     })
     async function doFolds() {
         let random = new XORShift(123456789)
@@ -109,7 +110,7 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
                 // console.log("Current board state:", JSON.stringify(shapesObj, null, 2))
                 let shapeId = random.choice(Array.from(board.shapes.keys()))
                 let shape = board.shapes.get(shapeId)!
-                let foldSpec = randomlyChooseExpansion(shape, expansionRandom)
+                let foldSpec = randomlyChooseFullFold(shape, expansionRandom)
                 if (!foldSpec) {
                     break
                 }
@@ -130,9 +131,10 @@ function visualiseFoldSpec(
     annotationsLayer: paper.Layer,
     foldSpec: FoldSpec,
     foldAction: FoldAction
-) {
+): paper.Group {
     // do them as transparent gray triangles,
     // bit with a + or - sign in the middle (for add or remove) for each triangle
+    let createdBits = new paper.Group()
     let foldSpecTriangles = foldSpec.toTriangles()
     let foldTemplate = FOLD_TEMPLATES[foldAction]
     let symbol = {
@@ -159,6 +161,7 @@ function visualiseFoldSpec(
             clone.fillColor = new paper.Color("#f006")
         }
         annotationsLayer.addChild(clone)
+        createdBits.addChild(clone)
         let text = new paper.PointText({
             content: symbol[shapeChange],
             point: midpoints[side].add(new paper.Point(0, 0.13)),
@@ -167,46 +170,107 @@ function visualiseFoldSpec(
             justification: "center"
         })
         annotationsLayer.addChild(text)
+        createdBits.addChild(text)
+        let firstHingeDot = new paper.Path.Circle(foldSpec.hinges[0], 0.05)
+        firstHingeDot.fillColor = new paper.Color("#555a")
+        annotationsLayer.addChild(firstHingeDot)
+        createdBits.addChild(firstHingeDot)
     }
+    let endArrow = new paper.Path([
+        foldSpec.end.add(foldSpec.hinges[0].subtract(foldSpec.end).normalize(0.2)),
+        foldSpec.end,
+        foldSpec.end.add(foldSpec.hinges[1].subtract(foldSpec.end).normalize(0.2))
+    ])
+    endArrow.strokeColor = new paper.Color("#555d")
+    endArrow.strokeWidth = 0.04
+    annotationsLayer.addChild(endArrow)
+    createdBits.addChild(endArrow)
+    return createdBits
 }
 
-export const progression = withCommonArgs(function progression(args: CommonStoryArgs) {
-    let bounds = new paper.Rectangle(-2, -1, 7, 40)
+export const parcel = withCommonArgs(function parcel(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(0, 0, 3, 3)
+    let { container, board, annotationsLayer } = rigamarole({
+        bounds,
+        zoom: 80,
+        ...args
+    })
+    async function doFolds() {
+        let initialFoldSpec = FoldSpec.fromEndPoints(
+            new paper.Point(1.5, 0.5),
+            new paper.Point(1.5, 2.5)
+        )
+        let viz = visualiseFoldSpec(annotationsLayer, initialFoldSpec, FOLD_ACTION.Create)
+        // await sleep(2000)
+        await board.foldAsync(1, initialFoldSpec, FOLD_ACTION.Create)
+        viz.remove()
+        let inwardsFoldSpecs = []
+        for (let i = 0; i < 4; i++) {
+            inwardsFoldSpecs.push(
+                FoldSpec.fromEndPoints(
+                    roundToHalfIntegers(
+                        new paper.Point(1.5, 1.5).add(
+                            new paper.Point(1, 0).rotate(90 * i, new paper.Point(0, 0))
+                        )
+                    ),
+                    new paper.Point(1.5, 1.5)
+                )
+            )
+        }
+        let inwardsViz = inwardsFoldSpecs.map(foldSpec =>
+            visualiseFoldSpec(annotationsLayer, foldSpec, FOLD_ACTION.Contract)
+        )
+        await sleep(2000)
+        inwardsViz.forEach(viz => viz.remove())
+        for (let foldSpec of inwardsFoldSpecs) {
+            await board.foldAsync(1, foldSpec, FOLD_ACTION.Contract)
+        }
+    }
+    doFolds()
+    return container
+})
+
+export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(-4, -1, 15, 150)
     let { container, board, annotationsLayer } = rigamarole({
         bounds,
         zoom: 55,
-        ...args,
-        speedFactor: 0.5
+        ...args
     })
     board.foldInstantaneously(
         1,
         FoldSpec.fromEndPoints(new paper.Point(2, 1), new paper.Point(0, 1), FOLD_COVER.Right),
         FOLD_ACTION.Create
     )
-    function pickFoldSpec(shape: paper.Path): FoldSpec | null {
-        let foldBases = FoldSpecBasis.getAllBases(shape, true, true)
-        if (foldBases.length == 0) {
-            return null
-        }
-        let basis = foldBases[0]
-        return basis.atMultiplier(basis.maxMultiplier())
-    }
     let expansionRandom = new XORShift(123456789)
-    for (let i = 1; i <= 100; i++) {
+    const columnOffset = new paper.Point(7, 0)
+    for (let i = 1; i <= 31; i++) {
         let oldShape = board.shapes.get(i)!
-        let foldSpec = randomlyChooseExpansion(oldShape, expansionRandom)
+        let foldSpec = randomlyChooseFullFold(oldShape, expansionRandom)
         if (foldSpec == null) {
             break
         }
+        let animationCopy = oldShape.clone()
+        animationCopy.translate(columnOffset)
+        board.addShape(-i, animationCopy)
+        async function foreverAnimate() {
+            let shiftedFoldSpec = foldSpec!.transform(new paper.Matrix().translate(columnOffset))
+            let reverse = false
+            let reversedFoldSpec = shiftedFoldSpec.reverse()
+            let currentFoldAction: FoldAction = FOLD_ACTION.Expand
+            while (true) {
+                let currentFoldSpec = reverse ? reversedFoldSpec : shiftedFoldSpec
+                currentFoldAction =
+                    currentFoldAction == FOLD_ACTION.Expand
+                        ? FOLD_ACTION.Contract
+                        : FOLD_ACTION.Expand
+                await board.foldAsync(-i, currentFoldSpec, currentFoldAction)
+                reverse = !reverse
+            }
+        }
+        foreverAnimate()
         visualiseFoldSpec(annotationsLayer, foldSpec, FOLD_ACTION.Expand)
         let foldSpecTriangles = foldSpec.toTriangles()
-        // for (let triangle of Object.values(foldSpecTriangles)) {
-        //     let clone = triangle.clone()
-        //     clone.strokeColor = new paper.Color("#7fc60b")
-        //     clone.strokeWidth = 0.05
-        //     annotationsLayer.addChild(clone)
-        // }
-
         let shapeTop = Math.min(
             oldShape.bounds.top,
             foldSpecTriangles.near.bounds.top,
@@ -218,12 +282,13 @@ export const progression = withCommonArgs(function progression(args: CommonStory
             foldSpecTriangles.far.bounds.bottom
         )
         let shapeHeight = shapeBottom - shapeTop
-        let offsetY = Math.ceil(shapeHeight + 0.5)
+        let offsetY = Math.ceil(shapeHeight + 1.5)
 
         let initialClone = oldShape.clone()
         initialClone.translate(new paper.Point(0, offsetY))
         board.addShape(i + 1, initialClone)
-        let redoneFoldSpec = pickFoldSpec(board.shapes.get(i + 1)!)!
+        let offsetTransform = new paper.Matrix().translate(new paper.Point(0, offsetY))
+        let redoneFoldSpec = foldSpec.transform(offsetTransform)
         board.foldInstantaneously(i + 1, redoneFoldSpec, FOLD_ACTION.Expand)
     }
     return container

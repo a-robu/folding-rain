@@ -78,6 +78,18 @@ export class FoldSpec {
         )
     }
 
+    transform(transform: paper.Matrix) {
+        return new FoldSpec(
+            this.start.transform(transform),
+            [this.hinges[0].transform(transform), this.hinges[1].transform(transform)],
+            this.end.transform(transform)
+        )
+    }
+
+    reverse() {
+        return new FoldSpec(this.end, [this.hinges[1], this.hinges[0]], this.start)
+    }
+
     key() {
         return [
             this.start.x,
@@ -285,16 +297,15 @@ export class FoldSpecBasis {
         let outerApex = roundToHalfIntegers(
             this.start.add(hingeVector.rotate(-45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2))
         )
+        let [firstHinge, secondHinge] = [
+            this.start,
+            roundToHalfIntegers(this.start.add(hingeVector))
+        ]
         if (!this.rightToLeft) {
-            // If the fold is right-to-left, we need to swap the inner and outer apexes
             ;[innerApex, outerApex] = [outerApex, innerApex]
+            ;[firstHinge, secondHinge] = [secondHinge, firstHinge]
         }
-
-        return new FoldSpec(
-            innerApex,
-            [this.start, roundToHalfIntegers(this.start.add(hingeVector))],
-            outerApex
-        )
+        return new FoldSpec(innerApex, [firstHinge, secondHinge], outerApex)
     }
 }
 

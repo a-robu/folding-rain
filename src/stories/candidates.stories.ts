@@ -102,7 +102,7 @@ export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs
 })
 
 export const partialCover = withCommonArgs(function partialCover(args: CommonStoryArgs) {
-    let bounds = new paper.Rectangle(-2, 0, 9, 13)
+    let bounds = new paper.Rectangle(-2, -1, 9, 17)
     let { container, board, annotationsLayer } = rigamarole({
         bounds,
         zoom: 50,
@@ -123,7 +123,7 @@ export const partialCover = withCommonArgs(function partialCover(args: CommonSto
     }
 
     let secondShape = shape.clone()
-    secondShape.translate(new paper.Point(0, 6))
+    secondShape.translate(new paper.Point(0, 8))
     secondShape = board.addShape(2, secondShape)
 
     let ccwFoldBases = FoldSpecBasis.getAllBases(secondShape, false, false)

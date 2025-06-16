@@ -28,14 +28,15 @@ export default {
     title: "Simulations"
 }
 
-function randomlyChooseFullFold(shape: paper.Path, random: PRNG): FoldSpec | null {
+function randomlyChooseFold(shape: paper.Path, random: PRNG): FoldSpec | null {
     let clockwise = random.bool()
-    let foldBases = FoldSpecBasis.getAllBases(shape, clockwise, false)
+    let fullCover = random.bool()
+    let foldBases = FoldSpecBasis.getAllBases(shape, clockwise, fullCover)
     if (foldBases.length == 0) {
         return null
     }
     let basis = random.choice(foldBases) as FoldSpecBasis
-    return basis.atMultiplier(basis.maxMultiplier())
+    return basis.atMultiplier(basis.maxMultiplier(3))
 }
 
 function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise<void> | null {
@@ -98,18 +99,9 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
         if (creating) {
             await creating
             while (true) {
-                // Log a complete backup of the board (all current polygons)
-                // as a JSON in the requested format: { id: [[x, y], ...], ... }
-                // const shapesObj = Object.fromEntries(
-                //     Array.from(board.shapes.entries()).map(([id, shape]) => [
-                //         id,
-                //         shape.segments.map(seg => [seg.point.x, seg.point.y])
-                //     ])
-                // )
-                // console.log("Current board state:", JSON.stringify(shapesObj, null, 2))
                 let shapeId = random.choice(Array.from(board.shapes.keys()))
-                let shape = board.shapes.get(shapeId)!
-                let foldSpec = randomlyChooseFullFold(shape, expansionRandom)
+                let shape = board.shapes.get(shapeId)
+                let foldSpec = randomlyChooseFold(shape!, expansionRandom)
                 if (!foldSpec) {
                     break
                 }
@@ -119,6 +111,7 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
                 } else {
                     break
                 }
+                // await sleep(exponentialDelay(1))
             }
         }
     }
@@ -243,9 +236,9 @@ export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonSto
     )
     let expansionRandom = new XORShift(123456789)
     const columnOffset = new paper.Point(7, 0)
-    for (let i = 1; i <= 31; i++) {
+    for (let i = 1; i <= 30; i++) {
         let oldShape = board.shapes.get(i)!
-        let foldSpec = randomlyChooseFullFold(oldShape, expansionRandom)
+        let foldSpec = randomlyChooseFold(oldShape, expansionRandom)
         if (foldSpec == null) {
             break
         }
@@ -256,13 +249,9 @@ export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonSto
             let shiftedFoldSpec = foldSpec!.transform(new paper.Matrix().translate(columnOffset))
             let reverse = false
             let reversedFoldSpec = shiftedFoldSpec.reverse()
-            let currentFoldAction: FoldAction = FOLD_ACTION.Expand
             while (true) {
                 let currentFoldSpec = reverse ? reversedFoldSpec : shiftedFoldSpec
-                currentFoldAction =
-                    currentFoldAction == FOLD_ACTION.Expand
-                        ? FOLD_ACTION.Contract
-                        : FOLD_ACTION.Expand
+                let currentFoldAction = reverse ? FOLD_ACTION.Contract : FOLD_ACTION.Expand
                 await board.foldAsync(-i, currentFoldSpec, currentFoldAction)
                 reverse = !reverse
             }

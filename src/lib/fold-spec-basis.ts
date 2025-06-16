@@ -23,7 +23,7 @@ export class FoldSpecBasis {
      * The length of the original segment (hinges must not
      * exceed this length).
      */
-    maxLength: number
+    private segmentLength: number
     /**
      * If true, the tips of the folds will have 90° angles.
      * If false, the tips will have 45° angles and the start
@@ -40,14 +40,14 @@ export class FoldSpecBasis {
         start: paper.Point,
         basis: paper.Point,
         linearEquation: LinearEquation,
-        maxLength: number,
+        segmentLength: number,
         fullCover: boolean,
         rightToLeft: boolean
     ) {
         this.start = start
         this.basis = basis
         this.linearEquation = linearEquation
-        this.maxLength = maxLength
+        this.segmentLength = segmentLength
         this.fullCover = fullCover
         this.rightToLeft = rightToLeft
     }
@@ -99,10 +99,16 @@ export class FoldSpecBasis {
         )
     }
 
-    maxMultiplier() {
-        return Math.floor(
-            (this.maxLength - this.linearEquation.constant) / this.linearEquation.coefficient
-        )
+    length(multiplier: number) {
+        return this.linearEquation.constant + this.linearEquation.coefficient * multiplier
+    }
+
+    maxMultiplier(lengthLimit?: number) {
+        let limit = this.segmentLength
+        if (lengthLimit !== undefined) {
+            limit = Math.min(limit, lengthLimit)
+        }
+        return Math.floor((limit - this.linearEquation.constant) / this.linearEquation.coefficient)
     }
 
     getAll() {
@@ -114,7 +120,7 @@ export class FoldSpecBasis {
     }
 
     atMultiplier(multiplier: number): FoldSpec {
-        let hingeVector = this.basis.multiply(this.linearEquation.coefficient * multiplier)
+        let hingeVector = this.basis.multiply(this.length(multiplier))
         let [innerApex, outerApex] = this.fullCover
             ? [
                   roundToHalfIntegers(

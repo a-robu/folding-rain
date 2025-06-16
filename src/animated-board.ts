@@ -331,7 +331,11 @@ export class Board {
         } else {
             throw new Error("Unrecognized color transition: " + `${shapeChange}`)
         }
-        for (let segment of this.shapes.get(shapeId)!.segments) {
+        let shape = this.shapes.get(shapeId)
+        if (!shape) {
+            throw new Error(`Shape with ID ${shapeId} does not exist after applying update`)
+        }
+        for (let segment of shape.segments) {
             if (!isHalfIntegerCoordinate(segment.point)) {
                 segment.point = roundToHalfIntegers(segment.point)
             }

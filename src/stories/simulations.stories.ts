@@ -18,7 +18,8 @@ import {
     allVertices,
     roundToHalfIntegers,
     squareDiagonalsFromVertex,
-    areHalfCoversValid
+    areHalfCoversValid,
+    isIntegerCoordinate
 } from "@/lib/tetrakis"
 import { withCommonArgs } from "./common-args"
 import type { CommonStoryArgs } from "./common-args"
@@ -86,11 +87,17 @@ function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise
         let foldCovers = halfCoversAreValid ? FOLD_COVERS : [FOLD_COVER.Full]
         let foldCover = random.choice(foldCovers)
         let unfoldPlan = FoldSpec.fromEndPoints(startVertex, endVertex, foldCover)
-
+        if (!isIntegerCoordinate(startVertex)) {
+            let isAxisAligned = vector.x == 0 || vector.y == 0
+            if (foldCover != FOLD_COVER.Full) {
+                if (isAxisAligned) {
+                    continue // skip axis-aligned folds with non-full covers
+                }
+            }
+        }
         if (!verificationAllOk(verifyFold(board, bounds, unfoldPlan, FOLD_ACTION.Create))) {
             continue
         }
-
         let unusedIndex = board.shapes.size == 0 ? 1 : Math.max(...board.shapes.keys()) + 1
         return board.foldAsync(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
     }
@@ -105,7 +112,7 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
         pixelWidth: 800,
         pixelHeight: 800,
         ...args,
-        speedFactor: 2
+        speedFactor: 1000
     })
     async function doFolds() {
         let random = new XORShift(123456789)

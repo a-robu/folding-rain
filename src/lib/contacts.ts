@@ -17,7 +17,11 @@ function isFullyContained(triangle: paper.Path, shape: paper.Path) {
 }
 
 function shapesHaveContact(shapeA: paper.Path, shapeB: paper.Path) {
-    return shapeA.intersects(shapeB) || shapeA.contains(shapeB.segments[0].point)
+    return (
+        shapeA.intersects(shapeB) ||
+        shapeA.contains(shapeB.segments[0].point) ||
+        shapeB.contains(shapeA.segments[0].point)
+    )
 }
 
 // const CONTACT_CHECK_TYPE = {

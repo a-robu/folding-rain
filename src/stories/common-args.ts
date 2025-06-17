@@ -2,8 +2,8 @@ export type ShowVertexLabels = "off" | "vertexId" | "vertexAngle"
 
 export const commonArgTypes = {
     drawGridLines: { control: "boolean", defaultValue: true },
-    latticeAvailability: { control: "boolean", defaultValue: false },
-    latticeContactid: { control: "boolean", defaultValue: false },
+    // latticeAvailability: { control: "boolean", defaultValue: false },
+    // latticeContactid: { control: "boolean", defaultValue: false },
     showShapeId: { control: "boolean", defaultValue: false },
     showVertexLabels: {
         control: { type: "radio" },
@@ -14,8 +14,8 @@ export const commonArgTypes = {
 
 export const commonArgs = {
     drawGridLines: true,
-    latticeAvailability: false,
-    latticeContactid: false,
+    // latticeAvailability: false,
+    // latticeContactid: false,
     showShapeId: false,
     showVertexLabels: "off" as ShowVertexLabels
 }

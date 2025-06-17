@@ -116,36 +116,6 @@ export class Board {
         })
     }
 
-    findPolygonContacts(shape: paper.Path) {
-        let existingShapeIds = []
-        let lockShapeIds = []
-        for (let existingShape of this.shapes.values()) {
-            if (
-                existingShape.intersects(shape) ||
-                existingShape.contains(shape.segments[0].point)
-            ) {
-                let id = existingShape.data.id
-                if (id == null) {
-                    throw new Error("Shape does not have an ID")
-                }
-                existingShapeIds.push(existingShape.data.id)
-            }
-        }
-        for (let lockShape of this.lockShapes.children) {
-            if (lockShape.intersects(shape) || lockShape.contains(shape.segments[0].point)) {
-                let id = lockShape.data.id
-                if (id == null) {
-                    throw new Error("Lock shape does not have an ID")
-                }
-                lockShapeIds.push(lockShape.data.id)
-            }
-        }
-        return {
-            shapeIds: existingShapeIds,
-            lockShapeIds: lockShapeIds
-        }
-    }
-
     findPointContacts(point: paper.Point) {
         let existingShapeIds = []
         let lockShapeIds = []
@@ -325,6 +295,7 @@ export class Board {
                 created.flatten(0.1)
                 created.fillColor = new paper.Color(this.makePastelColor())
                 created.data.id = shapeId
+                created.data.board = this
                 this.shapes.set(shapeId, created)
                 this.shapesLayer.addChild(created)
             }
@@ -352,6 +323,7 @@ export class Board {
         shape.closed = true
         shape.reorient(false, true)
         shape.data.id = id
+        shape.data.board = this
         if (!shape.fillColor) {
             shape.fillColor = new paper.Color(this.makePastelColor())
         }

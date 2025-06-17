@@ -1,6 +1,12 @@
 import paper from "paper"
 import { isOnTetrakisLattice, roundToHalfIntegers } from "@/lib/tetrakis"
 
+export const SIDE = {
+    Near: "Near",
+    Far: "Far"
+}
+export type Side = keyof typeof SIDE
+
 export const SHAPE_CHANGE = {
     Add: "Add",
     Remove: "Remove",

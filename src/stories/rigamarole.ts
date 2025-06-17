@@ -16,8 +16,8 @@ export function rigamarole({
     pixelWidth,
     pixelHeight,
     drawGridLines = true,
-    latticeAvailability = false,
-    latticeContactid = false,
+    // latticeAvailability = false,
+    // latticeContactid = false,
     speedFactor = 1,
     showShapeId = false,
     showVertexLabels = "off"
@@ -27,8 +27,8 @@ export function rigamarole({
     pixelWidth?: number
     pixelHeight?: number
     drawGridLines?: boolean
-    latticeAvailability?: boolean
-    latticeContactid?: boolean
+    // latticeAvailability?: boolean
+    // latticeContactid?: boolean
     speedFactor?: number
     showShapeId?: boolean
     showVertexLabels?: "off" | "vertexId" | "vertexAngle"
@@ -53,15 +53,15 @@ export function rigamarole({
     window.board = board
 
     let contactVizInstance: ContactViz | undefined = undefined
-    if (latticeAvailability || latticeContactid) {
-        contactVizInstance = new ContactViz(
-            bounds,
-            annotationsLayer,
-            board,
-            latticeAvailability,
-            latticeContactid
-        )
-    }
+    // if (latticeAvailability || latticeContactid) {
+    //     contactVizInstance = new ContactViz(
+    //         bounds,
+    //         annotationsLayer,
+    //         board,
+    //         latticeAvailability,
+    //         latticeContactid
+    //     )
+    // }
 
     let labelVizInstance: LabelViz | undefined = undefined
     if (showShapeId) {

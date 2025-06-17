@@ -23,6 +23,8 @@ import {
 import { withCommonArgs } from "./common-args"
 import type { CommonStoryArgs } from "./common-args"
 import { FoldSpecBasis } from "@/lib/fold-spec-basis"
+import { visualiseFoldSpec } from "./visualize-fold"
+import { verificationAllOk, verifyFold } from "@/lib/contacts"
 
 export default {
     title: "Simulations"
@@ -41,20 +43,30 @@ function randomlyChooseFold(
     }
     let basis = random.choice(foldBases) as FoldSpecBasis
     let foldSpec = basis.atMultiplier(basis.maxMultiplier(3))
-    let triangles = foldSpec.toTriangles()
-    if (!bounds.contains(triangles.far.bounds)) {
+    let verification = verifyFold(
+        shape.data.board,
+        bounds,
+        foldSpec,
+        FOLD_ACTION.Expand,
+        shape.data.id
+    )
+    if (!verificationAllOk(verification)) {
         return null
     }
-    let innerIntersection = triangles.near.intersect(shape)
-    let innerAreaDiff = Math.abs((innerIntersection as paper.Path).area - triangles.near.area)
-    if (innerAreaDiff > 0.01) {
-        return null
-    }
-    let outerIntersection = triangles.far.intersect(shape)
-    let outerArea = (outerIntersection as paper.Path).area
-    if (outerArea > 0.01) {
-        return null
-    }
+    // let triangles = foldSpec.toTriangles()
+    // if (!bounds.contains(triangles.far.bounds)) {
+    //     return null
+    // }
+    // let innerIntersection = triangles.near.intersect(shape)
+    // let innerAreaDiff = Math.abs((innerIntersection as paper.Path).area - triangles.near.area)
+    // if (innerAreaDiff > 0.01) {
+    //     return null
+    // }
+    // let outerIntersection = triangles.far.intersect(shape)
+    // let outerArea = (outerIntersection as paper.Path).area
+    // if (outerArea > 0.01) {
+    //     return null
+    // }
     // if (intersection.area)
     return foldSpec
 }
@@ -74,27 +86,10 @@ function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise
         let foldCovers = halfCoversAreValid ? FOLD_COVERS : [FOLD_COVER.Full]
         let foldCover = random.choice(foldCovers)
         let unfoldPlan = FoldSpec.fromEndPoints(startVertex, endVertex, foldCover)
-        let quad = unfoldPlan.toQuad()
-        // Check if the plan is within the bounds of the lattice
-        if (quad.segments.some(segment => !bounds.contains(segment.point))) {
+
+        if (!verificationAllOk(verifyFold(board, bounds, unfoldPlan, FOLD_ACTION.Create))) {
             continue
         }
-        let contacts = board.findPolygonContacts(quad)
-        if (contacts.shapeIds.length > 0 || contacts.lockShapeIds.length > 0) {
-            continue
-        }
-        // // Check if the plan's touches the perimeter of any other shape
-        // if (Array.from(board.shapes.values()).some(shape => shape.intersects(quad))) {
-        //     continue
-        // }
-        // // Check if a point of the plan is contained within any existing shape
-        // if (
-        //     Array.from(board.shapes.values()).some(shape =>
-        //         shape.contains(quad.segments[0].point)
-        //     )
-        // ) {
-        //     continue
-        // }
 
         let unusedIndex = board.shapes.size == 0 ? 1 : Math.max(...board.shapes.keys()) + 1
         return board.foldAsync(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
@@ -126,7 +121,7 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
                 let foldSpec: FoldSpec | null = null
                 for (let attempt = 0; attempt < 100; attempt++) {
                     shapeId = random.choice(Array.from(board.shapes.keys()))
-                    let shape = board.shapes.get(shapeId)
+                    let shape = board.shapes.get(shapeId!)
                     foldSpec = randomlyChooseFold(shape!, expansionRandom, bounds)
                     if (foldSpec) {
                         break
@@ -137,7 +132,7 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
                 if (!foldSpec) {
                     break
                 }
-                await board.foldAsync(shapeId, foldSpec, FOLD_ACTION.Expand)
+                await board.foldAsync(shapeId!, foldSpec, FOLD_ACTION.Expand)
                 // await sleep(exponentialDelay(1))
             }
         }
@@ -146,67 +141,6 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
     doFolds()
     return container
 })
-
-function visualiseFoldSpec(
-    annotationsLayer: paper.Layer,
-    foldSpec: FoldSpec,
-    foldAction: FoldAction
-): paper.Group {
-    // do them as transparent gray triangles,
-    // bit with a + or - sign in the middle (for add or remove) for each triangle
-    let createdBits = new paper.Group()
-    let foldSpecTriangles = foldSpec.toTriangles()
-    let foldTemplate = FOLD_TEMPLATES[foldAction]
-    let symbol = {
-        [SHAPE_CHANGE.Add]: "+",
-        [SHAPE_CHANGE.Remove]: "-",
-        [SHAPE_CHANGE.Keep]: "•"
-    }
-    let hingeCenter = foldSpec.hinges[0].add(foldSpec.hinges[1]).divide(2)
-    let midpoints = {
-        near: foldSpec.start.add(hingeCenter).divide(2),
-        far: foldSpec.end.add(hingeCenter).divide(2)
-    }
-    for (let side of ["near", "far"] as const) {
-        let triangle = foldSpecTriangles[side]
-        let clone = triangle.clone()
-        let shapeChange = foldTemplate[side]
-        if (shapeChange == SHAPE_CHANGE.Keep) {
-            clone.strokeColor = new paper.Color("#555a")
-            clone.strokeWidth = 0.03
-            clone.dashArray = [0.1, 0.04]
-        } else if (shapeChange == SHAPE_CHANGE.Add) {
-            clone.fillColor = new paper.Color("#0f06")
-        } else if (shapeChange == SHAPE_CHANGE.Remove) {
-            clone.fillColor = new paper.Color("#f006")
-        }
-        annotationsLayer.addChild(clone)
-        createdBits.addChild(clone)
-        let text = new paper.PointText({
-            content: symbol[shapeChange],
-            point: midpoints[side].add(new paper.Point(0, 0.13)),
-            fillColor: "#555a",
-            fontSize: 0.4,
-            justification: "center"
-        })
-        annotationsLayer.addChild(text)
-        createdBits.addChild(text)
-        let firstHingeDot = new paper.Path.Circle(foldSpec.hinges[0], 0.05)
-        firstHingeDot.fillColor = new paper.Color("#555a")
-        annotationsLayer.addChild(firstHingeDot)
-        createdBits.addChild(firstHingeDot)
-    }
-    let endArrow = new paper.Path([
-        foldSpec.end.add(foldSpec.hinges[0].subtract(foldSpec.end).normalize(0.2)),
-        foldSpec.end,
-        foldSpec.end.add(foldSpec.hinges[1].subtract(foldSpec.end).normalize(0.2))
-    ])
-    endArrow.strokeColor = new paper.Color("#555d")
-    endArrow.strokeWidth = 0.04
-    annotationsLayer.addChild(endArrow)
-    createdBits.addChild(endArrow)
-    return createdBits
-}
 
 export const parcel = withCommonArgs(function parcel(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(0, 0, 3, 3)

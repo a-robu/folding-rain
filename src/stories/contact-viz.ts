@@ -53,35 +53,35 @@ export class ContactViz {
     }
 
     onShapeUpdate() {
-        for (let [key, triangle] of this.latticeVizTriangles) {
-            let contacts = this.board.findPolygonContacts(triangle)
-            if (this.showAvailability) {
-                if (contacts.shapeIds.length > 0) {
-                    triangle.visible = false
-                } else if (contacts.lockShapeIds.length > 0) {
-                    triangle.fillColor = this.ORANGE
-                    triangle.visible = true
-                } else {
-                    triangle.fillColor = this.GREEN
-                    triangle.visible = true
-                }
-            } else {
-                triangle.visible = false
-            }
-            let label = this.triangleLabels.get(key)
-            if (this.showContactId) {
-                if (contacts.lockShapeIds.length == 0 && contacts.shapeIds.length == 0) {
-                    label!.content = ""
-                } else if (contacts.shapeIds.length > 0 && contacts.lockShapeIds.length == 0) {
-                    label!.content = `${contacts.shapeIds}`
-                } else {
-                    label!.content = `${contacts.shapeIds}/${contacts.lockShapeIds}`
-                }
-                label!.visible = true
-            } else {
-                label!.visible = false
-            }
-        }
+        // for (let [key, triangle] of this.latticeVizTriangles) {
+        // let contacts = this.board.findPolygonContacts(triangle)
+        //     if (this.showAvailability) {
+        //         if (contacts.shapeIds.length > 0) {
+        //             triangle.visible = false
+        //         } else if (contacts.lockShapeIds.length > 0) {
+        //             triangle.fillColor = this.ORANGE
+        //             triangle.visible = true
+        //         } else {
+        //             triangle.fillColor = this.GREEN
+        //             triangle.visible = true
+        //         }
+        //     } else {
+        //         triangle.visible = false
+        //     }
+        //     let label = this.triangleLabels.get(key)
+        //     if (this.showContactId) {
+        //         if (contacts.lockShapeIds.length == 0 && contacts.shapeIds.length == 0) {
+        //             label!.content = ""
+        //         } else if (contacts.shapeIds.length > 0 && contacts.lockShapeIds.length == 0) {
+        //             label!.content = `${contacts.shapeIds}`
+        //         } else {
+        //             label!.content = `${contacts.shapeIds}/${contacts.lockShapeIds}`
+        //         }
+        //         label!.visible = true
+        //     } else {
+        //         label!.visible = false
+        //     }
+        // }
         for (let { point, circle } of this.latticeVizPoints) {
             let contacts = this.board.findPointContacts(point)
             if (contacts.shapeIds.length > 0) {

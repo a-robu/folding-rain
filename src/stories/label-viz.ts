@@ -27,7 +27,6 @@ export class LabelViz {
 
     private onShapeUpdate() {
         this.clearLabels()
-        let i = 1
         for (const shape of this.board.shapes.values()) {
             // Place label at shape's centroid
             const centroid = shape.position
@@ -42,7 +41,7 @@ export class LabelViz {
             this.annotationsLayer.addChild(circle)
             this.circles.push(circle)
             const label = new paper.PointText({
-                content: i,
+                content: shape.data.id,
                 point: centroid.add(new paper.Point(0, 0.07)),
                 fillColor: "black",
                 fontSize: 0.26,
@@ -51,7 +50,6 @@ export class LabelViz {
             })
             this.annotationsLayer.addChild(label)
             this.labels.push(label)
-            i++
         }
     }
 }

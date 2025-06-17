@@ -1,4 +1,4 @@
-import type { Board } from "@/animated-board"
+import type { Board } from "@/board"
 import { allTriangleIdxs, allVertices, makeTrianglePolygon, triangleIdxToKey } from "@/lib/tetrakis"
 import paper from "paper"
 

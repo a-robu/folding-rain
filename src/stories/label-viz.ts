@@ -1,5 +1,5 @@
 import paper from "paper"
-import type { Board } from "@/animated-board"
+import type { Board } from "@/board"
 
 export class LabelViz {
     private labels: paper.PointText[] = []

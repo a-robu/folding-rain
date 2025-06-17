@@ -1,5 +1,5 @@
 import paper from "paper"
-import { Board } from "@/animated-board"
+import { Board } from "@/board"
 import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold-spec"
 import { sleep } from "@/lib/time"
 import { rigamarole } from "./rigamarole"

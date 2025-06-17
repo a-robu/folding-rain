@@ -7,7 +7,7 @@ import {
     FoldSpec,
     SHAPE_CHANGE
 } from "@/lib/fold-spec"
-import { cosineEase, easeOutBounce } from "./lib/easing-functions"
+import { cosineEase, easeOutBounce, easeOutCirc } from "./lib/easing-functions"
 import type PRNG from "random-seedable/@types/PRNG"
 import randomColor from "randomcolor"
 import { isHalfIntegerCoordinate, roundToHalfIntegers } from "./lib/tetrakis"
@@ -61,7 +61,7 @@ class FoldAnimation {
         // The cosine ease creates the effect of a triangle holding its shape, but
         // moving around a hinge and the out-bounce gives the effect of a flap
         // falling down and bouncing a bit.
-        let animatedProgress = easeOutBounce(cosineEase(this.progress))
+        let animatedProgress = easeOutCirc(cosineEase(this.progress))
 
         this.tip.point = this.apexTrajectory.getPointAt(
             this.apexTrajectory.length * animatedProgress

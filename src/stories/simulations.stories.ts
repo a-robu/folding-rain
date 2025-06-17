@@ -13,7 +13,7 @@ import {
 import { normalise, randomChoiceWeighted } from "@/lib/randomness"
 import { rigamarole } from "./rigamarole"
 import { exponentialDelay, sleep } from "@/lib/time"
-import type { Board } from "@/animated-board"
+import type { Board } from "@/board"
 import {
     allVertices,
     roundToHalfIntegers,
@@ -28,7 +28,11 @@ export default {
     title: "Simulations"
 }
 
-function randomlyChooseFold(shape: paper.Path, random: PRNG): FoldSpec | null {
+function randomlyChooseFold(
+    shape: paper.Path,
+    random: PRNG,
+    bounds: paper.Rectangle
+): FoldSpec | null {
     let clockwise = random.bool()
     let fullCover = random.bool()
     let foldBases = FoldSpecBasis.getAllBases(shape, clockwise, fullCover)
@@ -36,7 +40,23 @@ function randomlyChooseFold(shape: paper.Path, random: PRNG): FoldSpec | null {
         return null
     }
     let basis = random.choice(foldBases) as FoldSpecBasis
-    return basis.atMultiplier(basis.maxMultiplier(3))
+    let foldSpec = basis.atMultiplier(basis.maxMultiplier(3))
+    let triangles = foldSpec.toTriangles()
+    if (!bounds.contains(triangles.far.bounds)) {
+        return null
+    }
+    let innerIntersection = triangles.near.intersect(shape)
+    let innerAreaDiff = Math.abs((innerIntersection as paper.Path).area - triangles.near.area)
+    if (innerAreaDiff > 0.01) {
+        return null
+    }
+    let outerIntersection = triangles.far.intersect(shape)
+    let outerArea = (outerIntersection as paper.Path).area
+    if (outerArea > 0.01) {
+        return null
+    }
+    // if (intersection.area)
+    return foldSpec
 }
 
 function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise<void> | null {
@@ -99,21 +119,29 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
         if (creating) {
             await creating
             while (true) {
-                let shapeId = random.choice(Array.from(board.shapes.keys()))
-                let shape = board.shapes.get(shapeId)
-                let foldSpec = randomlyChooseFold(shape!, expansionRandom)
+                if (random.float() < 0.2) {
+                    await tryCreate(board, bounds, random)
+                }
+                let shapeId: number | null = null
+                let foldSpec: FoldSpec | null = null
+                for (let attempt = 0; attempt < 100; attempt++) {
+                    shapeId = random.choice(Array.from(board.shapes.keys()))
+                    let shape = board.shapes.get(shapeId)
+                    foldSpec = randomlyChooseFold(shape!, expansionRandom, bounds)
+                    if (foldSpec) {
+                        break
+                    }
+                    console.log("no fold spec found, trying again")
+                    await sleep(50)
+                }
                 if (!foldSpec) {
                     break
                 }
-                let expansion = board.foldAsync(shapeId, foldSpec, FOLD_ACTION.Expand)
-                if (expansion) {
-                    await expansion
-                } else {
-                    break
-                }
+                await board.foldAsync(shapeId, foldSpec, FOLD_ACTION.Expand)
                 // await sleep(exponentialDelay(1))
             }
         }
+        console.log("ceased operation")
     }
     doFolds()
     return container
@@ -223,7 +251,7 @@ export const parcel = withCommonArgs(function parcel(args: CommonStoryArgs) {
 })
 
 export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonStoryArgs) {
-    let bounds = new paper.Rectangle(-4, -1, 15, 150)
+    let bounds = new paper.Rectangle(-4, -1, 23, 150)
     let { container, board, annotationsLayer } = rigamarole({
         bounds,
         zoom: 55,
@@ -235,10 +263,16 @@ export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonSto
         FOLD_ACTION.Create
     )
     let expansionRandom = new XORShift(123456789)
-    const columnOffset = new paper.Point(7, 0)
+    const columnOffset = new paper.Point(10, 0)
     for (let i = 1; i <= 30; i++) {
         let oldShape = board.shapes.get(i)!
-        let foldSpec = randomlyChooseFold(oldShape, expansionRandom)
+        let foldSpec: FoldSpec | null = null
+        for (let attempt = 0; attempt < 20; attempt++) {
+            foldSpec = randomlyChooseFold(oldShape, expansionRandom, bounds)
+            if (foldSpec != null) {
+                break
+            }
+        }
         if (foldSpec == null) {
             break
         }

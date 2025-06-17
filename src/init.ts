@@ -1,5 +1,5 @@
 import paper from "paper"
-import { Board } from "@/animated-board"
+import { Board } from "@/board"
 import { drawGrid } from "@/draw-grid"
 import { XORShift } from "random-seedable"
 

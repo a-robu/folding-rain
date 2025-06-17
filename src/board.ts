@@ -197,13 +197,23 @@ export class Board {
         let triangles = foldSpec.toTriangles()
         let template = FOLD_TEMPLATES[foldAction]
         this.applyTriangleUpdate(shapeId, triangles.near, template.near)
-        let lockShape = triangles.far.clone()
-        lockShape.data.id = shapeId
-        this.lockShapes.addChild(lockShape)
+        let nearLockShape = triangles.near.clone()
+        nearLockShape.data.id = shapeId
+        // nearLockShape.fillColor = new paper.Color(1, 0, 0)
+        // nearLockShape.fillColor.alpha = 0.5 // Semi-transparent
+        this.shapesLayer.addChild(nearLockShape)
+        this.lockShapes.addChild(nearLockShape)
+        let farLockShape = triangles.far.clone()
+        farLockShape.data.id = shapeId
+        // farLockShape.fillColor = new paper.Color(1, 1, 0)
+        // farLockShape.fillColor.alpha = 0.5 // Semi-transparent
+        this.shapesLayer.addChild(farLockShape)
+        this.lockShapes.addChild(farLockShape)
         this.notifyShapeUpdateListeners()
         function onComplete(board: Board) {
             board.applyTriangleUpdate(shapeId, triangles.far, template.far)
-            lockShape.remove()
+            farLockShape.remove()
+            nearLockShape.remove()
             board.notifyShapeUpdateListeners()
         }
         if (instantaneous) {
@@ -294,7 +304,9 @@ export class Board {
                 created.reorient(false, true)
                 created.flatten(0.1)
                 created.fillColor = new paper.Color(this.makePastelColor())
+                created.fillColor = new paper.Color(0.2, 0.2, 0.2)
                 created.data.id = shapeId
+                // created.fillColor.alpha = 0.5 // Semi-transparent
                 created.data.board = this
                 this.shapes.set(shapeId, created)
                 this.shapesLayer.addChild(created)

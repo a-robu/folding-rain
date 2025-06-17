@@ -43,7 +43,12 @@ function randomlyChooseFold(
         return null
     }
     let basis = random.choice(foldBases) as FoldSpecBasis
-    let foldSpec = basis.atMultiplier(basis.maxMultiplier(3))
+    let maxMultiplier = randomChoiceWeighted(
+        random,
+        [1, 2, 3, 4, 5],
+        normalise([100, 50, 25, 10, 5])
+    )
+    let foldSpec = basis.atMultiplier(basis.maxMultiplier(maxMultiplier))
     let verification = verifyFold(
         shape.data.board,
         bounds,
@@ -79,7 +84,7 @@ function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise
         let rayMultiplier = randomChoiceWeighted(
             random,
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            normalise([100, 50, 25, 10, 5, 2, 1, 1, 1, 1])
+            normalise([1000, 200, 50, 10, 5, 2, 1, 1, 1, 1])
         )
         let vector = ray.multiply(rayMultiplier)
         let endVertex = roundToHalfIntegers(startVertex.add(vector))
@@ -88,12 +93,22 @@ function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise
         let foldCover = random.choice(foldCovers)
         let unfoldPlan = FoldSpec.fromEndPoints(startVertex, endVertex, foldCover)
         if (!isIntegerCoordinate(startVertex)) {
-            let isAxisAligned = vector.x == 0 || vector.y == 0
-            if (foldCover != FOLD_COVER.Full) {
-                if (isAxisAligned) {
-                    continue // skip axis-aligned folds with non-full covers
-                }
-            }
+            // this needs fixing
+            continue
+            // let isAxisAligned = vector.x == 0 || vector.y == 0
+            // console.log("sus", {
+            //     startVertex,
+            //     vector,
+            //     endVertex,
+            //     foldCover,
+            //     halfCoversAreValid,
+            //     isAxisAligned
+            // })
+            // if (foldCover != FOLD_COVER.Full) {
+            //     if (isAxisAligned) {
+            //         continue // skip axis-aligned folds with non-full covers
+            //     }
+            // }
         }
         if (!verificationAllOk(verifyFold(board, bounds, unfoldPlan, FOLD_ACTION.Create))) {
             continue
@@ -106,46 +121,43 @@ function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise
 
 export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(0, 0, 14, 14)
+    let speedFactor = 3
     let { container, board } = rigamarole({
         bounds,
         zoom: 55,
         pixelWidth: 800,
         pixelHeight: 800,
         ...args,
-        speedFactor: 1000
+        speedFactor: speedFactor
     })
-    async function doFolds() {
+    ;(async () => {
         let random = new XORShift(123456789)
-        let expansionRandom = new XORShift(123456789)
-        let creating = tryCreate(board, bounds, random)
-        if (creating) {
-            await creating
-            while (true) {
-                if (random.float() < 0.2) {
-                    await tryCreate(board, bounds, random)
-                }
-                let shapeId: number | null = null
-                let foldSpec: FoldSpec | null = null
-                for (let attempt = 0; attempt < 100; attempt++) {
-                    shapeId = random.choice(Array.from(board.shapes.keys()))
-                    let shape = board.shapes.get(shapeId!)
-                    foldSpec = randomlyChooseFold(shape!, expansionRandom, bounds)
-                    if (foldSpec) {
-                        break
-                    }
-                    console.log("no fold spec found, trying again")
-                    await sleep(50)
-                }
-                if (!foldSpec) {
-                    break
-                }
-                await board.foldAsync(shapeId!, foldSpec, FOLD_ACTION.Expand)
-                // await sleep(exponentialDelay(1))
+        await tryCreate(board, bounds, random)
+        while (true) {
+            if (random.float() < 0.03) {
+                tryCreate(board, bounds, random)
             }
+            // if (random.float() < 0.8) {
+            //     await
+            // }
+            let shapeId: number | null = null
+            let foldSpec: FoldSpec | null = null
+            // for (let attempt = 0; attempt < 100; attempt++) {
+            shapeId = random.choice(Array.from(board.shapes.keys()))
+            let shape = board.shapes.get(shapeId!)
+            foldSpec = randomlyChooseFold(shape!, random, bounds)
+            // if (foldSpec) {
+            //     break
+            // }
+            // }
+            if (foldSpec) {
+                board.foldAsync(shapeId!, foldSpec, FOLD_ACTION.Expand)
+            }
+            // else {
+            await sleep(100 / speedFactor)
+            // }
         }
-        console.log("ceased operation")
-    }
-    doFolds()
+    })()
     return container
 })
 

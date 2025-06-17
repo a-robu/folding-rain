@@ -80,11 +80,8 @@ export function verifyFold(
             }
         }
         let innerLockShapes: paper.Path[] = []
-        let outerLockShapes: paper.Path[] = []
         for (let lockShape of board.lockShapes.children) {
-            if (lockShape.data.id !== shapeId) {
-                outerLockShapes.push(lockShape as paper.Path)
-            } else {
+            if (lockShape.data.id === shapeId) {
                 innerLockShapes.push(lockShape as paper.Path)
             }
         }
@@ -99,8 +96,8 @@ export function verifyFold(
             }
         }
         let outerIntersectsLockShapes = false
-        for (let lockShape of outerLockShapes) {
-            if (shapesHaveContact(far, lockShape)) {
+        for (let lockShape of board.lockShapes.children) {
+            if (shapesHaveContact(far, lockShape as paper.Path)) {
                 outerIntersectsLockShapes = true
                 break
             }

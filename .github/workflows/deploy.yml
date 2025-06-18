@@ -21,7 +21,7 @@ jobs:
             - name: Setup pnpm
               uses: pnpm/action-setup@v3
               with:
-                  version: 8 # or your preferred pnpm version
+                  version: 10
 
             - name: Install dependencies
               run: pnpm install
@@ -44,7 +44,7 @@ jobs:
             - name: Setup pnpm
               uses: pnpm/action-setup@v3
               with:
-                  version: 8 # or your preferred pnpm version
+                  version: 10
 
             - name: Install dependencies
               run: pnpm install

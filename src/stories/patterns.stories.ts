@@ -6,6 +6,7 @@ import { rigamarole } from "./lib/rigamarole"
 import { withCommonArgs } from "./lib/common-args"
 import type { CommonStoryArgs } from "./lib/common-args"
 import { visualiseFoldSpec } from "./lib/visualize-fold"
+import { roundToGrid } from "@/lib/grid"
 
 export default {
     title: "Patterns"
@@ -85,6 +86,50 @@ export const fourFlowers = withCommonArgs(function fourFlowers(args: CommonStory
     ]) {
         makeFlower(board, center, id++)
     }
+    return container
+})
+
+export const parcel = withCommonArgs(function parcel(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(-1, -1, 6, 6)
+    let { container, board, annotationsLayer } = rigamarole({
+        bounds,
+        ...args
+    })
+    ;(async () => {
+        let initialFoldSpec = FoldSpec.fromEndPoints(
+            new paper.Point(2, 0),
+            new paper.Point(2, 4),
+            FOLD_COVER.Full
+        )
+        let viz = visualiseFoldSpec(initialFoldSpec, FOLD_ACTION.Create)
+        let fold = board.foldAsync(1, initialFoldSpec, FOLD_ACTION.Create)
+        annotationsLayer.addChild(viz)
+        await sleep(500)
+        viz.remove()
+        await fold
+        let inwardsFoldSpecs = []
+        for (let i = 0; i < 4; i++) {
+            inwardsFoldSpecs.push(
+                FoldSpec.fromEndPoints(
+                    roundToGrid(
+                        new paper.Point(2, 2).add(
+                            new paper.Point(2, 0).rotate(90 * i, new paper.Point(0, 0))
+                        )
+                    ),
+                    new paper.Point(2, 2),
+                    FOLD_COVER.Full
+                )
+            )
+        }
+        for (let foldSpec of inwardsFoldSpecs) {
+            let viz = visualiseFoldSpec(foldSpec, FOLD_ACTION.Contract)
+            annotationsLayer.addChild(viz)
+            let fold = board.foldAsync(1, foldSpec, FOLD_ACTION.Contract)
+            await sleep(500)
+            viz.remove()
+            await fold
+        }
+    })()
     return container
 })
 

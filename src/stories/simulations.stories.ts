@@ -161,48 +161,6 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
     return container
 })
 
-export const parcel = withCommonArgs(function parcel(args: CommonStoryArgs) {
-    let bounds = new paper.Rectangle(0, 0, 3, 3)
-    let { container, board, annotationsLayer } = rigamarole({
-        bounds,
-        zoom: 80,
-        ...args
-    })
-    async function doFolds() {
-        let initialFoldSpec = FoldSpec.fromEndPoints(
-            new paper.Point(1.5, 0.5),
-            new paper.Point(1.5, 2.5)
-        )
-        let viz = visualiseFoldSpec(annotationsLayer, initialFoldSpec, FOLD_ACTION.Create)
-        // await sleep(2000)
-        await board.foldAsync(1, initialFoldSpec, FOLD_ACTION.Create)
-        viz.remove()
-        let inwardsFoldSpecs = []
-        for (let i = 0; i < 4; i++) {
-            inwardsFoldSpecs.push(
-                FoldSpec.fromEndPoints(
-                    roundToHalfIntegers(
-                        new paper.Point(1.5, 1.5).add(
-                            new paper.Point(1, 0).rotate(90 * i, new paper.Point(0, 0))
-                        )
-                    ),
-                    new paper.Point(1.5, 1.5)
-                )
-            )
-        }
-        let inwardsViz = inwardsFoldSpecs.map(foldSpec =>
-            visualiseFoldSpec(annotationsLayer, foldSpec, FOLD_ACTION.Contract)
-        )
-        await sleep(2000)
-        inwardsViz.forEach(viz => viz.remove())
-        for (let foldSpec of inwardsFoldSpecs) {
-            await board.foldAsync(1, foldSpec, FOLD_ACTION.Contract)
-        }
-    }
-    doFolds()
-    return container
-})
-
 export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonStoryArgs) {
     let bounds = new paper.Rectangle(-4, -1, 23, 150)
     let { container, board, annotationsLayer } = rigamarole({

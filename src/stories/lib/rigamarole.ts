@@ -2,12 +2,40 @@ import { init } from "@/init"
 import paper from "paper"
 import { ContactViz } from "./contact-viz"
 import { LabelViz } from "./label-viz"
+import type { Board } from "@/board"
+import { drawGrid } from "@/draw-grid"
 
 declare global {
     interface Window {
         board: any
         grid: any
     }
+}
+
+function computePixelDimensions(
+    bounds: paper.Rectangle,
+    zoom: number,
+    pixelWidth?: number,
+    pixelHeight?: number
+): { pixelWidth: number; pixelHeight: number } {
+    return {
+        pixelWidth: pixelWidth ?? Math.round(bounds.width * zoom),
+        pixelHeight: pixelHeight ?? Math.round(bounds.height * zoom)
+    }
+}
+
+function applyCanvasDimensions(
+    container: HTMLElement,
+    canvas: HTMLCanvasElement,
+    pixelWidth: number,
+    pixelHeight: number
+) {
+    container.style.width = `${pixelWidth}px`
+    container.style.height = `${pixelHeight}px`
+    canvas.width = pixelWidth
+    canvas.height = pixelHeight
+    canvas.style.outline = "2px solid #ddd"
+    canvas.style.borderRadius = "2px"
 }
 
 export function rigamarole({
@@ -18,6 +46,7 @@ export function rigamarole({
     drawGridLines = true,
     // gridAvailability = false,
     // gridContactid = false,
+    board,
     speedFactor = 1,
     showShapeId = false,
     showVertexLabels = "off"
@@ -29,26 +58,29 @@ export function rigamarole({
     drawGridLines?: boolean
     // gridAvailability?: boolean
     // gridContactid?: boolean
+    board?: Board
     speedFactor?: number
     showShapeId?: boolean
     showVertexLabels?: "off" | "vertexId" | "vertexAngle"
 } = {}) {
-    // Automatically determine pixelWidth and pixelHeight if not provided
-    const computedPixelWidth = pixelWidth ?? Math.round(bounds.width * zoom)
-    const computedPixelHeight = pixelHeight ?? Math.round(bounds.height * zoom)
-    // Create the canvas and bind paper.js to it
+    let computedDimensions = computePixelDimensions(bounds, zoom, pixelWidth, pixelHeight)
     const container = document.createElement("div")
-    container.style.width = `${computedPixelWidth}px`
-    container.style.height = `${computedPixelHeight}px`
     const canvas = document.createElement("canvas")
-    canvas.width = computedPixelWidth
-    canvas.height = computedPixelHeight
-    canvas.style.outline = "2px solid #ddd"
-    canvas.style.borderRadius = "2px"
+    applyCanvasDimensions(
+        container,
+        canvas,
+        computedDimensions.pixelWidth,
+        computedDimensions.pixelHeight
+    )
     container.appendChild(canvas)
     paper.setup(canvas)
 
-    let { board, annotationsLayer } = init(bounds, zoom, drawGridLines, speedFactor)
+    let {
+        board: gottenBoard,
+        annotationsLayer,
+        gridLinesLayer
+    } = init(bounds, zoom, drawGridLines, speedFactor, board)
+    board = gottenBoard
 
     window.board = board
 
@@ -133,6 +165,19 @@ export function rigamarole({
         contactViz: contactVizInstance,
         labelViz: labelVizInstance,
         vertexLabelsGroup,
-        setShowVertexLabels
+        setShowVertexLabels,
+        resize: (newBounds: paper.Rectangle) => {
+            let newDimensions = computePixelDimensions(newBounds, zoom)
+            paper.view.zoom = zoom
+            paper.view.viewSize = new paper.Size(
+                newDimensions.pixelWidth,
+                newDimensions.pixelHeight
+            )
+            paper.view.center = newBounds.center
+            gridLinesLayer.removeChildren()
+            if (drawGridLines) {
+                drawGrid(gridLinesLayer, newBounds)
+            }
+        }
     }
 }

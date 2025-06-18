@@ -11,7 +11,7 @@ import {
     type FoldAction
 } from "@/lib/fold-spec"
 import { normalise, randomChoiceWeighted } from "@/lib/randomness"
-import { rigamarole } from "./rigamarole"
+import { rigamarole } from "./lib/rigamarole"
 import { exponentialDelay, sleep } from "@/lib/time"
 import type { Board } from "@/board"
 import {
@@ -21,10 +21,10 @@ import {
     areHalfCoversValid,
     isOnGrid
 } from "@/lib/grid"
-import { withCommonArgs } from "./common-args"
-import type { CommonStoryArgs } from "./common-args"
+import { withCommonArgs } from "./lib/common-args"
+import type { CommonStoryArgs } from "./lib/common-args"
 import { FoldSpecBasis } from "@/lib/fold-spec-basis"
-import { visualiseFoldSpec } from "./visualize-fold"
+import { visualiseFoldSpec } from "./lib/visualize-fold"
 import { verificationAllOk, verifyFold } from "@/lib/contacts"
 
 export default {

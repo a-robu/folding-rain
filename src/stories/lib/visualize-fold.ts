@@ -1,14 +1,10 @@
 import paper from "paper"
 import { FoldSpec, type FoldAction, FOLD_TEMPLATES, SHAPE_CHANGE } from "@/lib/fold-spec"
 
-export function visualiseFoldSpec(
-    annotationsLayer: paper.Layer,
-    foldSpec: FoldSpec,
-    foldAction: FoldAction
-): paper.Group {
+export function visualiseFoldSpec(foldSpec: FoldSpec, foldAction: FoldAction): paper.Group {
     // do them as transparent gray triangles,
     // bit with a + or - sign in the middle (for add or remove) for each triangle
-    let createdBits = new paper.Group()
+    let createdBits = new paper.Group({ insert: false })
     let foldSpecTriangles = foldSpec.toTriangles()
     let foldTemplate = FOLD_TEMPLATES[foldAction]
     let symbol = {
@@ -40,10 +36,15 @@ export function visualiseFoldSpec(
             point: midpoints[side].add(new paper.Point(0, 0.13)),
             fillColor: "#555a",
             fontSize: 0.4,
-            justification: "center"
+            justification: "center",
+            insert: false
         })
         createdBits.addChild(text)
-        let firstHingeDot = new paper.Path.Circle(foldSpec.hinges[0], 0.05)
+        let firstHingeDot = new paper.Path.Circle({
+            center: foldSpec.hinges[0],
+            radius: 0.05,
+            insert: false
+        })
         firstHingeDot.fillColor = new paper.Color("#555a")
         createdBits.addChild(firstHingeDot)
     }
@@ -55,6 +56,5 @@ export function visualiseFoldSpec(
     endArrow.strokeColor = new paper.Color("#555d")
     endArrow.strokeWidth = 0.04
     createdBits.addChild(endArrow)
-    annotationsLayer.addChild(createdBits)
     return createdBits
 }

@@ -44,13 +44,7 @@ export function verificationAllOk(verification: any): boolean {
     return true
 }
 
-export function verifyFold(
-    board: Board,
-    bounds: paper.Rectangle,
-    fold: FoldSpec,
-    action: FoldAction,
-    shapeId?: number
-) {
+export function verifyFold(board: Board, fold: FoldSpec, action: FoldAction, shapeId?: number) {
     let { near, far } = fold.toTriangles()
     let shape: paper.Path | null = null
     if (action != FOLD_ACTION.Create) {
@@ -80,9 +74,15 @@ export function verifyFold(
             }
         }
         let innerLockShapes: paper.Path[] = []
+        let outerLockShapes: paper.Path[] = []
         for (let lockShape of board.lockShapes.children) {
+            if (lockShape.data.id === undefined) {
+                throw new Error("Lock shape does not have an ID")
+            }
             if (lockShape.data.id === shapeId) {
                 innerLockShapes.push(lockShape as paper.Path)
+            } else {
+                outerLockShapes.push(lockShape as paper.Path)
             }
         }
         let nearIntersectsLockShape = false
@@ -96,7 +96,7 @@ export function verifyFold(
             }
         }
         let outerIntersectsLockShapes = false
-        for (let lockShape of board.lockShapes.children) {
+        for (let lockShape of outerLockShapes) {
             if (shapesHaveContact(far, lockShape as paper.Path)) {
                 outerIntersectsLockShapes = true
                 break
@@ -111,8 +111,7 @@ export function verifyFold(
                 noSelfCollision:
                     !hasVertexContacts(farUnion) && Math.abs(farIntersection.area) < 0.01,
                 clearOfShapes: clearOfOtherShapes,
-                clearOfLocks: !outerIntersectsLockShapes,
-                inBounds: bounds.contains(far.bounds)
+                clearOfLocks: !outerIntersectsLockShapes
             }
         }
     } else if (action == FOLD_ACTION.Create) {
@@ -135,13 +134,11 @@ export function verifyFold(
         return {
             near: {
                 clearOfLocks: clearOfLocks(near),
-                clearOfShapes: clearOfShapes(near),
-                inBounds: bounds.contains(near.bounds)
+                clearOfShapes: clearOfShapes(near)
             },
             far: {
                 clearOfLocks: clearOfLocks(far),
-                clearOfShapes: clearOfShapes(far),
-                inBounds: bounds.contains(far.bounds)
+                clearOfShapes: clearOfShapes(far)
             }
         }
     } else {

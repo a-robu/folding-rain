@@ -1,6 +1,6 @@
 import paper from "paper"
-import { rigamarole } from "./rigamarole"
-import { withCommonArgs, type CommonStoryArgs } from "./common-args"
+import { rigamarole } from "./lib/rigamarole"
+import { withCommonArgs, type CommonStoryArgs } from "./lib/common-args"
 import { hasHoles, hasVertexContacts } from "@/lib/contacts"
 
 export default {

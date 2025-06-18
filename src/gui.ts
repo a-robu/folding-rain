@@ -29,7 +29,7 @@ export class GUI {
     private game: Game
     private board: Board
     private view: paper.View
-    private gridVisualisation: paper.Group = new paper.Group()
+    private gridVisualisation: paper.Group = new paper.Group({ insert: false })
     panButton: HTMLElement
     foldButton: HTMLElement
     // private unfoldPlan: null | {
@@ -78,7 +78,7 @@ export class GUI {
         this.gridSelectionDot.visible = false
         uiLayer.addChild(this.gridSelectionDot)
         // Initialise the drag square GUI element
-        this.dragSquare = new paper.Path()
+        this.dragSquare = new paper.Path({ insert: false })
         this.dragSquare.fillColor = new paper.Color(0.5, 0.5, 0.5)
         this.dragSquare.opacity = 0.5
         this.dragSquare.strokeWidth = 0

@@ -78,7 +78,13 @@ export function drawGrid(layer: paper.Layer, bounds: paper.Rectangle) {
     }
     // Diagonal lines
     // Always generate diagonals for normalized bounds, then map to original orientation
-    const normBounds = new paper.Rectangle(xMin, yMin, xMax - xMin, yMax - yMin)
+    const normBounds = new paper.Rectangle({
+        insert: false,
+        x: xMin,
+        y: yMin,
+        width: xMax - xMin,
+        height: yMax - yMin
+    })
     let diagonalLines = getGridDiagonals(normBounds)
     // If bounds are flipped, flip the diagonal lines accordingly
     const flipX = bounds.left > bounds.right
@@ -95,7 +101,7 @@ export function drawGrid(layer: paper.Layer, bounds: paper.Rectangle) {
     }
     // Draw the lines
     for (let line of lines) {
-        let path = new paper.Path()
+        let path = new paper.Path({ insert: false })
         path.moveTo(line[0])
         path.lineTo(line[1])
         path.strokeColor = GRID_LINES_COLOR
@@ -107,8 +113,12 @@ export function drawGrid(layer: paper.Layer, bounds: paper.Rectangle) {
         for (let y = yMin; y <= yMax; y++) {
             let px = flipX ? xMax - (x - xMin) : x
             let py = flipY ? yMax - (y - yMin) : y
-            let gridPoint = new paper.Point(px, py)
-            let path = new paper.Path.Circle(gridPoint, GRID_DOTS_RADIUS)
+            let gridPoint = new paper.Point({ insert: false, x: px, y: py })
+            let path = new paper.Path.Circle({
+                insert: false,
+                center: gridPoint,
+                radius: GRID_DOTS_RADIUS
+            })
             path.fillColor = GRID_DOTS_COLOR
             layer.addChild(path)
         }

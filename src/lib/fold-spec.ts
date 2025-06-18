@@ -51,8 +51,8 @@ export const FOLD_COVER = {
     Left: "Left",
     Right: "Right"
 }
-export type FoldCover = keyof typeof FOLD_COVER
-export const FOLD_COVERS: FoldCover[] = Object.keys(FOLD_COVER) as FoldCover[]
+export type FoldCover = (typeof FOLD_COVER)[keyof typeof FOLD_COVER]
+export const FOLD_COVERS = Object.values(FOLD_COVER)
 
 /**
  * Represents a shape with four vertices and an axis of symmetry
@@ -113,11 +113,7 @@ export class FoldSpec {
      * The first hinge will be in the clockwise direction from the start point,
      * and the second hinge will be in the counter-clockwise direction.
      */
-    static fromEndPoints(
-        start: paper.Point,
-        end: paper.Point,
-        foldCover = FOLD_COVER.Full
-    ): FoldSpec {
+    static fromEndPoints(start: paper.Point, end: paper.Point, foldCover: FoldCover): FoldSpec {
         if (!isOnGrid(start) || !isOnGrid(end)) {
             throw new Error(
                 "One or both coordinates are invalid: " +
@@ -169,13 +165,13 @@ export class FoldSpec {
      * "Compiles" the fold definition into two triangles.
      */
     toTriangles() {
-        let nearTriangle = new paper.Path()
+        let nearTriangle = new paper.Path({ insert: false })
         nearTriangle.add(this.start)
         nearTriangle.add(this.hinges[0])
         nearTriangle.add(this.hinges[1])
         nearTriangle.closed = true
         nearTriangle.reorient(false, true)
-        let farTriangle = new paper.Path()
+        let farTriangle = new paper.Path({ insert: false })
         farTriangle.add(this.end)
         farTriangle.add(this.hinges[1])
         farTriangle.add(this.hinges[0])
@@ -188,7 +184,7 @@ export class FoldSpec {
     }
 
     toQuad() {
-        let quad = new paper.Path()
+        let quad = new paper.Path({ insert: false })
         quad.add(this.start)
         quad.add(this.hinges[0])
         quad.add(this.end)

@@ -1,7 +1,7 @@
 import paper from "paper"
 import { FoldSpec } from "@/lib/fold-spec"
-import { rigamarole } from "./rigamarole"
-import { withCommonArgs, type CommonStoryArgs } from "./common-args"
+import { rigamarole } from "./lib/rigamarole"
+import { withCommonArgs, type CommonStoryArgs } from "./lib/common-args"
 import { FoldSpecBasis } from "@/lib/fold-spec-basis"
 
 export default {

@@ -7,95 +7,35 @@ import {
     FoldSpec,
     SHAPE_CHANGE
 } from "@/lib/fold-spec"
-import { cosineEase, easeOutBounce, easeOutCirc } from "./lib/easing-functions"
-import type PRNG from "random-seedable/@types/PRNG"
 import randomColor from "randomcolor"
-import { isOnGrid, roundToGrid } from "./lib/grid"
+import { isOnGrid, roundToGrid } from "@/lib/grid"
+import type { FoldAnimation } from "@/fold-animation"
 
-class FoldAnimation {
-    flap: paper.Path
-    tip: paper.Segment
-    apexTrajectory: paper.Path
-    initialColor: paper.Color
-    subsequentColor: paper.Color
-    t: number
-    duration: number
-
-    constructor(
-        flap: paper.Path,
-        tip: paper.Segment,
-        apexTrajectory: paper.Path,
-        initialColor: paper.Color,
-        subsequentColor: paper.Color,
-        duration: number
-    ) {
-        this.flap = flap
-        this.tip = tip
-        this.apexTrajectory = apexTrajectory
-        this.initialColor = initialColor
-        this.subsequentColor = subsequentColor
-        this.t = 0
-        this.duration = duration
-    }
-
-    get progress() {
-        return this.t / this.duration
-    }
-
-    private brighten(color: paper.Color, progress: number) {
-        // Function which maps 0 -> 0, 0.5 -> 1, 1 -> 0
-        let triangleFunction = (x: number) => {
-            if (x < 0) return 0
-            if (x > 1) return 0
-            return 1 - Math.abs(x - 0.5) * 2
-        }
-        let newColor = color.clone()
-        let changeAmount = 0.4
-        newColor.lightness =
-            color.lightness +
-            (color.lightness < changeAmount ? 1 : -1) * changeAmount * triangleFunction(progress)
-        return newColor
-    }
-
-    onFrame() {
-        // The cosine ease creates the effect of a triangle holding its shape, but
-        // moving around a hinge and the out-bounce gives the effect of a flap
-        // falling down and bouncing a bit.
-        let animatedProgress = easeOutCirc(cosineEase(this.progress))
-
-        this.tip.point = this.apexTrajectory.getPointAt(
-            this.apexTrajectory.length * animatedProgress
-        )
-        if (animatedProgress < 0.5) {
-            this.flap.fillColor = this.brighten(this.initialColor, animatedProgress)
-        } else {
-            this.flap.fillColor = this.brighten(this.subsequentColor, animatedProgress)
-        }
-    }
-
-    onDone() {
-        this.flap.remove()
-    }
-}
+const BACKGROUND_COLOR = new paper.Color(1, 1, 1)
+const SHAPE_COLOR = new paper.Color(0, 0, 0)
 
 export class Board {
     shapes: Map<number, paper.Path> = new Map()
-    private shapesLayer: paper.Layer
-    lockShapes: paper.Group = new paper.Group()
-    private animationLayer: paper.Layer
+    private shapesGroup: paper.Group = new paper.Group({ insert: false })
+    lockShapes: paper.Group = new paper.Group({ insert: false })
+    private animationGroup: paper.Group = new paper.Group({ insert: false })
+    paperGroup: paper.Group = new paper.Group({
+        insert: false,
+        children: [this.shapesGroup, this.animationGroup]
+    })
     private runningAnimations: {
         animation: FoldAnimation
         finalizeAnimation: () => void
     }[] = []
-    private random: PRNG
+    // private random: PRNG
     private shapeUpdateListeners: Array<() => void> = []
     speedFactor = 1
 
-    constructor(shapesLayer: paper.Layer, animationLayer: paper.Layer, random: PRNG) {
-        this.shapesLayer = shapesLayer
-        this.animationLayer = animationLayer
-        this.random = random
-    }
+    // constructor(shapesLayer: paper.Layer, animationLayer: paper.Layer) {//, random: PRNG) {
+    //     this.shapesLayer = shapesLayer
+    //     this.animationLayer = animationLayer
+    //     // this.random = random
+    // }
 
     addShapeUpdateListener(listener: () => void) {
         this.shapeUpdateListeners.push(listener)
@@ -174,9 +114,9 @@ export class Board {
         }
         return {
             initiallyVisible:
-                foldTemplate.near == SHAPE_CHANGE.Add ? new paper.Color(1, 1, 1) : shape.fillColor,
+                foldTemplate.near == SHAPE_CHANGE.Add ? BACKGROUND_COLOR : shape.fillColor,
             subsequentlyVisible:
-                foldTemplate.far == SHAPE_CHANGE.Remove ? new paper.Color(1, 1, 1) : shape.fillColor
+                foldTemplate.far == SHAPE_CHANGE.Remove ? BACKGROUND_COLOR : shape.fillColor
         }
     }
 
@@ -201,13 +141,13 @@ export class Board {
         nearLockShape.data.id = shapeId
         // nearLockShape.fillColor = new paper.Color(1, 0, 0)
         // nearLockShape.fillColor.alpha = 0.5 // Semi-transparent
-        this.shapesLayer.addChild(nearLockShape)
+        this.shapesGroup.addChild(nearLockShape)
         this.lockShapes.addChild(nearLockShape)
         let farLockShape = triangles.far.clone()
         farLockShape.data.id = shapeId
         // farLockShape.fillColor = new paper.Color(1, 1, 0)
         // farLockShape.fillColor.alpha = 0.5 // Semi-transparent
-        this.shapesLayer.addChild(farLockShape)
+        this.shapesGroup.addChild(farLockShape)
         this.lockShapes.addChild(farLockShape)
         this.notifyShapeUpdateListeners()
         function onComplete(board: Board) {
@@ -237,12 +177,12 @@ export class Board {
                 foldTemplate
             )
             let flap = foldSpec.toTriangles().near.clone()
-            this.animationLayer.addChild(flap)
+            this.animationGroup.addChild(flap)
             this.runningAnimations.push({
                 animation: new FoldAnimation(
                     flap,
                     flap.segments[FoldSpec.triangleApexIndex],
-                    new paper.Path([foldSpec.start, foldSpec.end]),
+                    new paper.Path({ insert: false, segments: [foldSpec.start, foldSpec.end] }),
                     initiallyVisible,
                     subsequentlyVisible,
                     foldSpec.start.getDistance(foldSpec.end)
@@ -284,7 +224,7 @@ export class Board {
                 result.reorient(false, true)
                 result.flatten(0.1)
                 this.shapes.set(shapeId, result)
-                this.shapesLayer.addChild(result)
+                this.shapesGroup.addChild(result)
             }
         } else if (shapeChange == SHAPE_CHANGE.Add) {
             // A triangle is being added to a shape
@@ -295,7 +235,7 @@ export class Board {
                 result.reorient(false, true)
                 result.flatten(0.1)
                 this.shapes.set(shapeId, result)
-                this.shapesLayer.addChild(result)
+                this.shapesGroup.addChild(result)
                 // shape.visible = false
                 shape.remove()
             } else {
@@ -303,13 +243,13 @@ export class Board {
                 let created = triangle.clone()
                 created.reorient(false, true)
                 created.flatten(0.1)
-                created.fillColor = new paper.Color(this.makePastelColor())
-                created.fillColor = new paper.Color(0, 0, 0)
+                // created.fillColor = new paper.Color(this.makePastelColor())
+                created.fillColor = SHAPE_COLOR
                 created.data.id = shapeId
                 // created.fillColor.alpha = 0.5 // Semi-transparent
                 created.data.board = this
                 this.shapes.set(shapeId, created)
-                this.shapesLayer.addChild(created)
+                this.shapesGroup.addChild(created)
             }
         } else {
             throw new Error("Unrecognized color transition: " + `${shapeChange}`)
@@ -337,10 +277,11 @@ export class Board {
         shape.data.id = id
         shape.data.board = this
         if (!shape.fillColor) {
-            shape.fillColor = new paper.Color(this.makePastelColor())
+            // shape.fillColor = new paper.Color(this.makePastelColor())
+            shape.fillColor = SHAPE_COLOR
         }
         this.shapes.set(id, shape)
-        this.shapesLayer.addChild(shape)
+        this.shapesGroup.addChild(shape)
         this.notifyShapeUpdateListeners()
         return shape
     }

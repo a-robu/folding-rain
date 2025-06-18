@@ -11,22 +11,17 @@ export default {
 function MOAP() {
     return new paper.Path(
         [
-            [1, 1],
-            [3, 3],
-            [4, 2],
-            [3.5, 1.5],
-            [4, 1],
-            [4.5, 1.5],
-            [5.5, 0.5],
-            [6, 1],
-            [6, 2],
-            [5, 2],
+            [3, 0],
+            [6, 0],
+            [9, 3],
+            [7, 5],
+            [6, 5],
             [5, 4],
-            [3.5, 5.5],
-            [3, 5],
-            [0, 5],
-            [0, 3],
-            [-0.5, 2.5]
+            [2, 7],
+            [0, 7],
+            [0, 6],
+            [1, 5],
+            [1, 2]
         ].map(p => new paper.Point(p[0], p[1]))
     )
 }
@@ -63,7 +58,7 @@ function annotateFold(layer: paper.Layer, foldSpec: FoldSpec) {
 }
 
 export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs) {
-    let bounds = new paper.Rectangle(-2, 0, 9, 13)
+    let bounds = new paper.Rectangle(-1, -2, 11, 20)
     let { container, board, annotationsLayer } = rigamarole({
         bounds,
         zoom: 50,
@@ -84,7 +79,7 @@ export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs
     }
 
     let secondShape = shape.clone()
-    secondShape.translate(new paper.Point(0, 6))
+    secondShape.translate(new paper.Point(0, 9))
     secondShape = board.addShape(2, secondShape)
 
     let ccwFoldBases = FoldSpecBasis.getAllBases(secondShape, false, true)
@@ -102,7 +97,7 @@ export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs
 })
 
 export const partialCover = withCommonArgs(function partialCover(args: CommonStoryArgs) {
-    let bounds = new paper.Rectangle(-2, -1, 9, 17)
+    let bounds = new paper.Rectangle(-3, -4, 15, 26)
     let { container, board, annotationsLayer } = rigamarole({
         bounds,
         zoom: 50,
@@ -123,7 +118,7 @@ export const partialCover = withCommonArgs(function partialCover(args: CommonSto
     }
 
     let secondShape = shape.clone()
-    secondShape.translate(new paper.Point(0, 8))
+    secondShape.translate(new paper.Point(0, 12))
     secondShape = board.addShape(2, secondShape)
 
     let ccwFoldBases = FoldSpecBasis.getAllBases(secondShape, false, false)

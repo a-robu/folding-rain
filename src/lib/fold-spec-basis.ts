@@ -1,6 +1,6 @@
 import paper from "paper"
 import { FoldSpec } from "@/lib/fold-spec"
-import { roundToHalfIntegers, validHingeLengths, type LinearEquation } from "@/lib/grid"
+import { hingeLengthFactors, roundToGrid } from "@/lib/grid"
 
 /**
  * Defines all grid-compliant folds along a vector.
@@ -18,7 +18,7 @@ export class FoldSpecBasis {
      * Defines all valid hinge lengths (coefficients must
      * be >= 1).
      */
-    linearEquation: LinearEquation
+    coefficient: number
     /**
      * The length of the original segment (hinges must not
      * exceed this length).
@@ -39,14 +39,14 @@ export class FoldSpecBasis {
     constructor(
         start: paper.Point,
         basis: paper.Point,
-        linearEquation: LinearEquation,
+        coefficient: number,
         segmentLength: number,
         fullCover: boolean,
         rightToLeft: boolean
     ) {
         this.start = start
         this.basis = basis
-        this.linearEquation = linearEquation
+        this.coefficient = coefficient
         this.segmentLength = segmentLength
         this.fullCover = fullCover
         this.rightToLeft = rightToLeft
@@ -81,7 +81,7 @@ export class FoldSpecBasis {
         fullCover: boolean
     ) {
         let segmentVector = toVertex.subtract(fromVertex)
-        let linearEquation = validHingeLengths(fromVertex, segmentVector, fullCover)
+        let linearEquation = hingeLengthFactors(fromVertex, segmentVector, fullCover)
         if (linearEquation === null) {
             return null
         }
@@ -99,16 +99,12 @@ export class FoldSpecBasis {
         )
     }
 
-    length(multiplier: number) {
-        return this.linearEquation.constant + this.linearEquation.coefficient * multiplier
-    }
-
     maxMultiplier(lengthLimit?: number) {
         let limit = this.segmentLength
         if (lengthLimit !== undefined) {
             limit = Math.min(limit, lengthLimit)
         }
-        return Math.floor((limit - this.linearEquation.constant) / this.linearEquation.coefficient)
+        return Math.floor(limit / this.coefficient + 0.001)
     }
 
     getAll() {
@@ -120,32 +116,25 @@ export class FoldSpecBasis {
     }
 
     atMultiplier(multiplier: number): FoldSpec {
-        let hingeVector = this.basis.multiply(this.length(multiplier))
+        let hingeVector = this.basis.multiply(multiplier * this.coefficient)
         let [innerApex, outerApex] = this.fullCover
             ? [
-                  roundToHalfIntegers(
+                  roundToGrid(
                       this.start.add(
                           hingeVector.rotate(45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2)
                       )
                   ),
-                  roundToHalfIntegers(
+                  roundToGrid(
                       this.start.add(
                           hingeVector.rotate(-45, new paper.Point(0, 0)).multiply(Math.SQRT2 / 2)
                       )
                   )
               ]
             : [
-                  roundToHalfIntegers(
-                      this.start.add(hingeVector.rotate(90, new paper.Point(0, 0)))
-                  ),
-                  roundToHalfIntegers(
-                      this.start.add(hingeVector.rotate(-90, new paper.Point(0, 0)))
-                  )
+                  roundToGrid(this.start.add(hingeVector.rotate(90, new paper.Point(0, 0)))),
+                  roundToGrid(this.start.add(hingeVector.rotate(-90, new paper.Point(0, 0))))
               ]
-        let [firstHinge, secondHinge] = [
-            this.start,
-            roundToHalfIntegers(this.start.add(hingeVector))
-        ]
+        let [firstHinge, secondHinge] = [this.start, roundToGrid(this.start.add(hingeVector))]
         if (!this.rightToLeft) {
             ;[innerApex, outerApex] = [outerApex, innerApex]
             ;[firstHinge, secondHinge] = [secondHinge, firstHinge]

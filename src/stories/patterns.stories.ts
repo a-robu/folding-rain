@@ -19,22 +19,37 @@ export const threeTriangles = withCommonArgs(function threeTriangles(args: Commo
         ...args
     })
     ;(async () => {
-        let spec1 = FoldSpec.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1))
-        let viz1 = visualiseFoldSpec(annotationsLayer, spec1, FOLD_ACTION.Create)
+        let spec1 = FoldSpec.fromEndPoints(
+            new paper.Point(0, 0),
+            new paper.Point(1, 1),
+            FOLD_COVER.Full
+        )
+        let viz1 = visualiseFoldSpec(spec1, FOLD_ACTION.Create)
+        annotationsLayer.addChild(viz1)
         board.foldAsync(1, spec1, FOLD_ACTION.Create)
         await sleep(500)
         viz1.remove()
         await sleep(500)
 
-        let spec2 = FoldSpec.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4))
-        let viz2 = visualiseFoldSpec(annotationsLayer, spec2, FOLD_ACTION.Create)
+        let spec2 = FoldSpec.fromEndPoints(
+            new paper.Point(0, 2),
+            new paper.Point(2, 4),
+            FOLD_COVER.Full
+        )
+        let viz2 = visualiseFoldSpec(spec2, FOLD_ACTION.Create)
+        annotationsLayer.addChild(viz2)
         board.foldAsync(2, spec2, FOLD_ACTION.Create)
         await sleep(500)
         viz2.remove()
         await sleep(500)
 
-        let spec3 = FoldSpec.fromEndPoints(new paper.Point(3, 0), new paper.Point(3, 2))
-        let viz3 = visualiseFoldSpec(annotationsLayer, spec3, FOLD_ACTION.Create)
+        let spec3 = FoldSpec.fromEndPoints(
+            new paper.Point(3, 0),
+            new paper.Point(3, 2),
+            FOLD_COVER.Full
+        )
+        let viz3 = visualiseFoldSpec(spec3, FOLD_ACTION.Create)
+        annotationsLayer.addChild(viz3)
         board.foldAsync(3, spec3, FOLD_ACTION.Create)
         await sleep(500)
         viz3.remove()
@@ -78,7 +93,8 @@ async function makeFlower(board: Board, center: paper.Point, id: number) {
         id,
         FoldSpec.fromEndPoints(
             new paper.Point(center.x, center.y + 1),
-            new paper.Point(center.x, center.y - 1)
+            new paper.Point(center.x, center.y - 1),
+            FOLD_COVER.Full
         ),
         FOLD_ACTION.Create
     )
@@ -95,7 +111,8 @@ async function makeFlower(board: Board, center: paper.Point, id: number) {
                 id,
                 FoldSpec.fromEndPoints(
                     new paper.Point(center.x, center.y),
-                    new paper.Point(center.x + dx, center.y + dy)
+                    new paper.Point(center.x + dx, center.y + dy),
+                    FOLD_COVER.Full
                 ),
                 FOLD_ACTION.Expand
             )
@@ -117,7 +134,8 @@ async function makeFlower(board: Board, center: paper.Point, id: number) {
                 id,
                 FoldSpec.fromEndPoints(
                     new paper.Point(center.x, center.y),
-                    new paper.Point(center.x + dx, center.y + dy)
+                    new paper.Point(center.x + dx, center.y + dy),
+                    FOLD_COVER.Full
                 ),
                 FOLD_ACTION.Expand
             )

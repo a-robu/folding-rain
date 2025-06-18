@@ -1,10 +1,5 @@
 import paper from "paper"
 
-export type LinearEquation = {
-    constant: number
-    coefficient: number
-}
-
 // export const SIDE = {
 //     N: "N",
 //     E: "E",
@@ -134,13 +129,13 @@ export function squareDiagonalsFromVertex(vertex: paper.Point): paper.Point[] {
     return rotatedRays
 }
 
-export function validHingeLengths(
+export function hingeLengthFactors(
     origin: paper.Point,
     vector: paper.Point,
     fullCover: boolean
-): LinearEquation | null {
+): number {
     // Check the origin is on the grid.
-    if (!isOnTetrakisGrid(origin)) {
+    if (!isOnGrid(origin)) {
         throw new Error(`Invalid origin coordinates: (${origin.x}, ${origin.y})`)
     }
     // Check the vector is either axis-aligned or diagonal.
@@ -150,37 +145,10 @@ export function validHingeLengths(
             throw new Error(`Vector not perfectly diagonal: (${vector.x}, ${vector.y})`)
         }
     }
-    if (!isOnGrid(origin)) {
-        // Middle of the squares
-        if (isAxisAligned) {
-            throw new Error(
-                `Only diagonal vectors are allowed at half-integer coordinates: (${origin.x}, ${origin.y}) with vector (${vector.x}, ${vector.y})`
-            )
-        }
-        if (fullCover) {
-            // Full Cover flaps cannot be generated here because they require grid lines at
-            // 45-degrees from the hinge (so axis-aligned), but points at half-integer
-            // only have diagonal grid lines.
-            return null
-        } else {
-            return {
-                constant: Math.SQRT2 / 2,
-                coefficient: Math.SQRT2
-            }
-        }
-    }
     if (isAxisAligned) {
-        // Corners of the squares, axis-aligned
-        return {
-            constant: 0,
-            coefficient: 1
-        }
+        return fullCover ? 2 : 1
     } else {
-        // Corners of the squares, diagonal
-        return {
-            constant: 0,
-            coefficient: Math.sqrt(2)
-        }
+        return Math.sqrt(2)
     }
 }
 

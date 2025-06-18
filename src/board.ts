@@ -9,7 +9,7 @@ import {
 } from "@/lib/fold-spec"
 import randomColor from "randomcolor"
 import { isOnGrid, roundToGrid } from "@/lib/grid"
-import type { FoldAnimation } from "@/fold-animation"
+import { FoldAnimation } from "@/fold-animation"
 
 const BACKGROUND_COLOR = new paper.Color(1, 1, 1)
 const SHAPE_COLOR = new paper.Color(0, 0, 0)

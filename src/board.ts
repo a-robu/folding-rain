@@ -10,7 +10,7 @@ import {
 import { cosineEase, easeOutBounce, easeOutCirc } from "./lib/easing-functions"
 import type PRNG from "random-seedable/@types/PRNG"
 import randomColor from "randomcolor"
-import { isHalfIntegerCoordinate, roundToHalfIntegers } from "./lib/tetrakis"
+import { isOnGrid, roundToGrid } from "./lib/grid"
 
 class FoldAnimation {
     flap: paper.Path
@@ -50,7 +50,7 @@ class FoldAnimation {
             return 1 - Math.abs(x - 0.5) * 2
         }
         let newColor = color.clone()
-        let changeAmount = 0.3
+        let changeAmount = 0.4
         newColor.lightness =
             color.lightness +
             (color.lightness < changeAmount ? 1 : -1) * changeAmount * triangleFunction(progress)
@@ -257,7 +257,7 @@ export class Board {
 
     private applyTriangleUpdate(shapeId: number, triangle: paper.Path, shapeChange: ShapeChange) {
         for (let segment of triangle.segments) {
-            if (!isHalfIntegerCoordinate(segment.point)) {
+            if (!isOnGrid(segment.point)) {
                 throw new Error(
                     `Triangle segment point ${segment.point} is not a half-integer coordinate`
                 )
@@ -304,7 +304,7 @@ export class Board {
                 created.reorient(false, true)
                 created.flatten(0.1)
                 created.fillColor = new paper.Color(this.makePastelColor())
-                created.fillColor = new paper.Color(0.2, 0.2, 0.2)
+                created.fillColor = new paper.Color(0, 0, 0)
                 created.data.id = shapeId
                 // created.fillColor.alpha = 0.5 // Semi-transparent
                 created.data.board = this
@@ -319,8 +319,8 @@ export class Board {
             throw new Error(`Shape with ID ${shapeId} does not exist after applying update`)
         }
         for (let segment of shape.segments) {
-            if (!isHalfIntegerCoordinate(segment.point)) {
-                segment.point = roundToHalfIntegers(segment.point)
+            if (!isOnGrid(segment.point)) {
+                segment.point = roundToGrid(segment.point)
             }
         }
         // At the end of this method, after any shape changes:

@@ -1,5 +1,5 @@
 import paper from "paper"
-import { isOnTetrakisLattice, roundToHalfIntegers } from "@/lib/tetrakis"
+import { isOnGrid, roundToGrid } from "./grid"
 
 export const SIDE = {
     Near: "Near",
@@ -108,7 +108,7 @@ export class FoldSpec {
     /**
      * Defines a fold of two right-isosceles triangles sitting back to back,
      * given their apex points. Assumes the inputs are valid, meaning
-     * non-equal, lattice-aligned points. Throws an error if they are not.
+     * non-equal, grid-aligned points. Throws an error if they are not.
      * Also throws an error if the produced hinges are not valid.
      * The first hinge will be in the clockwise direction from the start point,
      * and the second hinge will be in the counter-clockwise direction.
@@ -118,14 +118,11 @@ export class FoldSpec {
         end: paper.Point,
         foldCover = FOLD_COVER.Full
     ): FoldSpec {
-        // Check that the input points are valid vertex coordinates
-        for (let [point, name] of [
-            [start, "start"],
-            [end, "end"]
-        ] as [paper.Point, string][]) {
-            if (!isOnTetrakisLattice(point)) {
-                throw new Error(`Invalid ${name} coordinates: (${point.x}, ${point.y})`)
-            }
+        if (!isOnGrid(start) || !isOnGrid(end)) {
+            throw new Error(
+                "One or both coordinates are invalid: " +
+                    `start=(${start.x}, ${start.y}), end=(${end.x}, ${end.y})`
+            )
         }
 
         // Check that the start and end are not the same points
@@ -133,14 +130,14 @@ export class FoldSpec {
             throw new Error(`Start and end points are the same: (${start.x}, ${start.y})`)
         }
 
-        // We assume the input defines a valid (lattice-aligned) square.
+        // We assume the input defines a valid (grid-aligned) square.
         // So we just add the other two corners.
         let vector = end.subtract(start)
-        let midpoint = roundToHalfIntegers(start.add(vector.multiply(0.5)))
-        let leftCorner = roundToHalfIntegers(
+        let midpoint = start.add(vector.multiply(0.5))
+        let leftCorner = roundToGrid(
             midpoint.add(vector.multiply(0.5).rotate(-90, new paper.Point(0, 0)))
         )
-        let rightCorner = roundToHalfIntegers(
+        let rightCorner = roundToGrid(
             midpoint.add(vector.multiply(0.5).rotate(90, new paper.Point(0, 0)))
         )
 
@@ -156,7 +153,7 @@ export class FoldSpec {
         }
 
         hinges.forEach((hinge, i) => {
-            if (!isOnTetrakisLattice(hinge)) {
+            if (!isOnGrid(hinge)) {
                 throw new Error(
                     `Produced invalid hinge coordinates, hinge=${i}: (${hinge.x}, ${hinge.y})` +
                         ` for start=(${start.x}, ${start.y}), end=(${end.x}, ${end.y}), ` +

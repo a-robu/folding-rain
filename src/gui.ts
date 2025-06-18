@@ -29,7 +29,7 @@ export class GUI {
     private game: Game
     private board: Board
     private view: paper.View
-    private latticeVisualisation: paper.Group = new paper.Group()
+    private gridVisualisation: paper.Group = new paper.Group()
     panButton: HTMLElement
     foldButton: HTMLElement
     // private unfoldPlan: null | {
@@ -139,7 +139,7 @@ export class GUI {
             let gridStart = Board.snapToNearestVertex(event.downPoint)
             if (
                 !this.board.vertexIsInBounds(gridStart) ||
-                !this.board.lattice.vertexIsClear(gridStart)
+                !this.board.grid.vertexIsClear(gridStart)
             ) {
                 return
             }
@@ -194,27 +194,27 @@ export class GUI {
             let unfoldPlan = createFold(gridStart, gridEnd)
             this.dragSquare.visible = false
             this.game.unfold(unfoldPlan)
-            this.latticeVisualisation.removeChildren().map(child => {
+            this.gridVisualisation.removeChildren().map(child => {
                 child.remove()
             })
 
-            // for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
-            //     let state = this.board.lattice.getState(triangleIndex)
+            // for (let triangleIndex of this.board.grid.allTriangleIndices()) {
+            //     let state = this.board.grid.getState(triangleIndex)
             //     // check if state is a number
             //     if (typeof state !== "number") {
             //         continue
             //     }
-            //     let path = this.board.lattice.makeTrianglePolygon(triangleIndex)
+            //     let path = this.board.grid.makeTrianglePolygon(triangleIndex)
             //     // path.position = path.position
             //     // path.scale(this.board.gridIncrement)
             //     path.fillColor = new paper.Color(1, 0, 1, 0.5)
             //     path.visible = false
-            //     this.latticeVisualisation.addChild(path)
-            //     // this.latticeTriangles.push(path)
+            //     this.gridVisualisation.addChild(path)
+            //     // this.gridTriangles.push(path)
             // }
 
-            // for (let triangleIndex of this.board.lattice.allTriangleIndices()) {
-            //     let state = this.board.lattice.getState(triangleIndex)
+            // for (let triangleIndex of this.board.grid.allTriangleIndices()) {
+            //     let state = this.board.grid.getState(triangleIndex)
 
             this.lastGridDrag = null
         }
@@ -230,7 +230,7 @@ export class GUI {
         if (!this.board.vertexIsInBounds(vertex)) {
             return
         }
-        if (!this.board.lattice.vertexIsClear(vertex)) {
+        if (!this.board.grid.vertexIsClear(vertex)) {
             return
         }
         // let wedges = this.board.all90DegWedges(vertex)

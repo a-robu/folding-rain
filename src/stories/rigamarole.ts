@@ -6,7 +6,7 @@ import { LabelViz } from "./label-viz"
 declare global {
     interface Window {
         board: any
-        lattice: any
+        grid: any
     }
 }
 
@@ -16,8 +16,8 @@ export function rigamarole({
     pixelWidth,
     pixelHeight,
     drawGridLines = true,
-    // latticeAvailability = false,
-    // latticeContactid = false,
+    // gridAvailability = false,
+    // gridContactid = false,
     speedFactor = 1,
     showShapeId = false,
     showVertexLabels = "off"
@@ -27,8 +27,8 @@ export function rigamarole({
     pixelWidth?: number
     pixelHeight?: number
     drawGridLines?: boolean
-    // latticeAvailability?: boolean
-    // latticeContactid?: boolean
+    // gridAvailability?: boolean
+    // gridContactid?: boolean
     speedFactor?: number
     showShapeId?: boolean
     showVertexLabels?: "off" | "vertexId" | "vertexAngle"
@@ -53,13 +53,13 @@ export function rigamarole({
     window.board = board
 
     let contactVizInstance: ContactViz | undefined = undefined
-    // if (latticeAvailability || latticeContactid) {
+    // if (gridAvailability || gridContactid) {
     //     contactVizInstance = new ContactViz(
     //         bounds,
     //         annotationsLayer,
     //         board,
-    //         latticeAvailability,
-    //         latticeContactid
+    //         gridAvailability,
+    //         gridContactid
     //     )
     // }
 

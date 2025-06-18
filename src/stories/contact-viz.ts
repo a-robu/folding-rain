@@ -1,11 +1,11 @@
 import type { Board } from "@/board"
-import { allTriangleIdxs, allVertices, makeTrianglePolygon, triangleIdxToKey } from "@/lib/tetrakis"
+import { allVertices } from "@/lib/grid"
 import paper from "paper"
 
 export class ContactViz {
-    private latticeVizTriangles: Map<string, paper.Path> = new Map()
+    private gridVizTriangles: Map<string, paper.Path> = new Map()
     private triangleLabels: Map<string, paper.PointText> = new Map()
-    private latticeVizPoints: { point: paper.Point; circle: paper.Path.Circle }[] = []
+    private gridVizPoints: { point: paper.Point; circle: paper.Path.Circle }[] = []
     private GREEN = new paper.Color(0, 1, 0, 0.5)
     private ORANGE = new paper.Color(1, 0.5, 0, 0.5)
     private board: any
@@ -27,7 +27,7 @@ export class ContactViz {
             let triangle = makeTrianglePolygon(tx)
             triangle.visible = false
             annotationsLayer.addChild(triangle)
-            this.latticeVizTriangles.set(triangleIdxToKey(tx), triangle)
+            this.gridVizTriangles.set(triangleIdxToKey(tx), triangle)
         }
 
         for (let tx of allTriangleIdxs(bounds)) {
@@ -46,14 +46,14 @@ export class ContactViz {
             let circle = new paper.Path.Circle(vertex, 0.1)
             circle.visible = false
             annotationsLayer.addChild(circle)
-            this.latticeVizPoints.push({ point: vertex, circle })
+            this.gridVizPoints.push({ point: vertex, circle })
         }
 
         this.board.addShapeUpdateListener(this.onShapeUpdate.bind(this))
     }
 
     onShapeUpdate() {
-        // for (let [key, triangle] of this.latticeVizTriangles) {
+        // for (let [key, triangle] of this.gridVizTriangles) {
         // let contacts = this.board.findPolygonContacts(triangle)
         //     if (this.showAvailability) {
         //         if (contacts.shapeIds.length > 0) {
@@ -82,7 +82,7 @@ export class ContactViz {
         //         label!.visible = false
         //     }
         // }
-        for (let { point, circle } of this.latticeVizPoints) {
+        for (let { point, circle } of this.gridVizPoints) {
             let contacts = this.board.findPointContacts(point)
             if (contacts.shapeIds.length > 0) {
                 circle.visible = false

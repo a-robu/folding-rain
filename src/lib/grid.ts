@@ -5,84 +5,48 @@ export type LinearEquation = {
     coefficient: number
 }
 
-export const SIDE = {
-    N: "N",
-    E: "E",
-    S: "S",
-    W: "W"
-} as const
-export type CardinalSide = keyof typeof SIDE
-export const CardinalSides: CardinalSide[] = [SIDE.N, SIDE.E, SIDE.S, SIDE.W]
+// export const SIDE = {
+//     N: "N",
+//     E: "E",
+//     S: "S",
+//     W: "W"
+// } as const
+// export type CardinalSide = keyof typeof SIDE
+// export const CardinalSides: CardinalSide[] = [SIDE.N, SIDE.E, SIDE.S, SIDE.W]
 
-export type TriangleIdx = {
-    squareIdx: paper.Point
-    cardinalSide: CardinalSide
-}
+// export type TriangleIdx = {
+//     squareIdx: paper.Point
+//     cardinalSide: CardinalSide
+// }
 
-export function triangleIdxToKey(triangleIdx: TriangleIdx) {
-    return `${triangleIdx.squareIdx.x},${triangleIdx.squareIdx.y},${triangleIdx.cardinalSide}`
-}
+// export function triangleIdxToKey(triangleIdx: TriangleIdx) {
+//     return `${triangleIdx.squareIdx.x},${triangleIdx.squareIdx.y},${triangleIdx.cardinalSide}`
+// }
 
-export function triangleIdxFromKey(key: string): TriangleIdx {
-    const parts = key.split(",")
-    if (parts.length !== 3) {
-        throw new Error(`Invalid triangle index key: ${key}`)
-    }
-    const squareIdx = new paper.Point(parseFloat(parts[0]), parseFloat(parts[1]))
-    const cardinalSide = parts[2] as CardinalSide
-    if (!CardinalSides.includes(cardinalSide)) {
-        throw new Error(`Invalid cardinal side: ${cardinalSide}`)
-    }
-    return { squareIdx, cardinalSide }
-}
+// export function triangleIdxFromKey(key: string): TriangleIdx {
+//     const parts = key.split(",")
+//     if (parts.length !== 3) {
+//         throw new Error(`Invalid triangle index key: ${key}`)
+//     }
+//     const squareIdx = new paper.Point(parseFloat(parts[0]), parseFloat(parts[1]))
+//     const cardinalSide = parts[2] as CardinalSide
+//     if (!CardinalSides.includes(cardinalSide)) {
+//         throw new Error(`Invalid cardinal side: ${cardinalSide}`)
+//     }
+//     return { squareIdx, cardinalSide }
+// }
 
 /**
  * Check if the coordinates are integers. Can be used both to check if
  * the coordinates are valid cell indices or also if they lie along the
- * square-corners part of the Tetrakis lattice. Does not check bounds.
+ * square-corners part of the Tetrakis grid. Does not check bounds.
  */
-export function isIntegerCoordinate(point: paper.Point) {
+export function isOnGrid(point: paper.Point) {
     return Number.isInteger(point.x) && Number.isInteger(point.y)
 }
 
-/**
- * Check if the coordinates are half-integers (i.e. 0.5, 1, 1.5, etc.).
- * Note: this includes coordinates which do not lie on the Tetrakis lattice!
- * @returns true if the coordinates were intergers which were divided by 2.
- */
-export function isHalfIntegerCoordinate(point: paper.Point) {
-    return Number.isInteger(point.x * 2) && Number.isInteger(point.y * 2)
-}
-
-/**
- * Check if the coordinates are valid vertices on a Tetrakis square lattice.
- * Note: does not check if the point lies within certain bounds.
- */
-export function isOnTetrakisLattice(point: paper.Point): boolean {
-    // First check that they're not just any random numbers, but
-    // that the coordinates are half-integers (i.e. 0.5, 1.5, etc.)
-    if (!isHalfIntegerCoordinate(point)) {
-        return false
-    }
-
-    // To make this easier to reason about, we divide the problem
-    // into two cases: either the point is on the corners of the
-    // squares or in the middle of the squares.
-
-    // First, the case where the point is on a square corner.
-    if (isIntegerCoordinate(point)) {
-        // It lies along a corner, so it's valid.
-        return true
-    }
-
-    // Now, we make check that both coordinates are not integers.
-    // This takes care of the case where the point is on the edge
-    // of a square.
-    return !Number.isInteger(point.x) && !Number.isInteger(point.y)
-}
-
-export function roundToHalfIntegers(point: paper.Point): paper.Point {
-    let result = point.multiply(2).round().divide(2)
+export function roundToGrid(point: paper.Point): paper.Point {
+    let result = point.round()
     // Fix weird -0.0 values using Object.is
     if (Object.is(result.x, -0)) {
         result.x = 0
@@ -119,69 +83,40 @@ export function allVertices(rect: paper.Rectangle): paper.Point[] {
             }
             // We always provide the bottom-right corner of the square.
             vertices.push(new paper.Point(x + 1, y + 1))
-            // And we always provide the center of the square.
-            vertices.push(new paper.Point(x + 0.5, y + 0.5))
         }
     }
 
     return vertices
 }
 
-export function allTriangleIdxs(rect: paper.Rectangle): TriangleIdx[] {
-    let triangles: TriangleIdx[] = []
-    for (let x = rect.x; x < rect.right; x++) {
-        for (let y = rect.y; y < rect.bottom; y++) {
-            const cell = new paper.Point(x, y)
-            for (const direction of CardinalSides) {
-                triangles.push({
-                    squareIdx: cell,
-                    cardinalSide: direction
-                })
-            }
-        }
-    }
-    return triangles
-}
-
-function makeTriangleForOriginSquare(cardinalSide: CardinalSide) {
-    // Create a triangle for the N side of the square.
-    const triangle = new paper.Path([
-        new paper.Point(0, 0),
-        new paper.Point(1, 0),
-        new paper.Point(0.5, 0.5)
-    ])
-    triangle.closed = true
-    // Rotate it for the requested cardinal side.
-    triangle.rotate(
-        {
-            [SIDE.N]: 0,
-            [SIDE.E]: 90,
-            [SIDE.S]: 180,
-            [SIDE.W]: 270
-        }[cardinalSide],
-        new paper.Point(0.5, 0.5)
-    )
-    return triangle
-}
-
-export function makeTrianglePolygon(triangleIdx: TriangleIdx): paper.Path {
-    let triangle = makeTriangleForOriginSquare(triangleIdx.cardinalSide)
-    triangle.translate(new paper.Point(triangleIdx.squareIdx.x, triangleIdx.squareIdx.y))
-    return triangle
-}
+// export function allTriangleIdxs(rect: paper.Rectangle): TriangleIdx[] {
+//     let triangles: TriangleIdx[] = []
+//     for (let x = rect.x; x < rect.right; x++) {
+//         for (let y = rect.y; y < rect.bottom; y++) {
+//             const cell = new paper.Point(x, y)
+//             for (const direction of CardinalSides) {
+//                 triangles.push({
+//                     squareIdx: cell,
+//                     cardinalSide: direction
+//                 })
+//             }
+//         }
+//     }
+//     return triangles
+// }
 
 /**
- * Returns the rays that can be used to generate valid squares (aligned to the lattice).
+ * Returns the rays that can be used to generate valid squares (aligned to the grid).
  * The ray sizes indicate the valid step size to take in the direction of the ray.
  * @param vertex - The vertex from which to generate the rays
  */
 export function squareDiagonalsFromVertex(vertex: paper.Point): paper.Point[] {
     let templateRays: paper.Point[] = []
-    if (isIntegerCoordinate(vertex)) {
+    if (isOnGrid(vertex)) {
         // Case where the vertices are along the (0, 0) subgrid
         templateRays.push(new paper.Point(2, 0))
         templateRays.push(new paper.Point(1, 1))
-    } else if (isOnTetrakisLattice(vertex)) {
+    } else if (isOnTetrakisGrid(vertex)) {
         // Case where the vertices are along the (.5, .5) subgrid
         templateRays.push(new paper.Point(1, 0))
     } else {
@@ -204,8 +139,8 @@ export function validHingeLengths(
     vector: paper.Point,
     fullCover: boolean
 ): LinearEquation | null {
-    // Check the origin is on the lattice.
-    if (!isOnTetrakisLattice(origin)) {
+    // Check the origin is on the grid.
+    if (!isOnTetrakisGrid(origin)) {
         throw new Error(`Invalid origin coordinates: (${origin.x}, ${origin.y})`)
     }
     // Check the vector is either axis-aligned or diagonal.
@@ -215,7 +150,7 @@ export function validHingeLengths(
             throw new Error(`Vector not perfectly diagonal: (${vector.x}, ${vector.y})`)
         }
     }
-    if (!isIntegerCoordinate(origin)) {
+    if (!isOnGrid(origin)) {
         // Middle of the squares
         if (isAxisAligned) {
             throw new Error(
@@ -263,7 +198,7 @@ export function areHalfCoversValid(vertex: paper.Point, ray: paper.Point) {
     //   AND the ray is diagonal, all covers are valid
     let isAxisAligned = ray.x == 0 || ray.y == 0
     let halfCoversAreValid = false
-    if (isIntegerCoordinate(vertex)) {
+    if (isOnGrid(vertex)) {
         // Vertex is on the corners of the squares
         if (isAxisAligned) {
             if (ray.length % 2 == 0) {
@@ -272,7 +207,7 @@ export function areHalfCoversValid(vertex: paper.Point, ray: paper.Point) {
         } else {
             halfCoversAreValid = true
         }
-    } else if (isOnTetrakisLattice(vertex)) {
+    } else if (isOnTetrakisGrid(vertex)) {
         // Vertex is in the middle of the squares
         if (isAxisAligned) {
             if (ray.length % 2 == 0) {

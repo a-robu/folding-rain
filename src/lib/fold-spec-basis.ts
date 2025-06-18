@@ -1,9 +1,9 @@
 import paper from "paper"
 import { FoldSpec } from "@/lib/fold-spec"
-import { roundToHalfIntegers, validHingeLengths, type LinearEquation } from "@/lib/tetrakis"
+import { roundToHalfIntegers, validHingeLengths, type LinearEquation } from "@/lib/grid"
 
 /**
- * Defines all lattice-compliant folds along a vector.
+ * Defines all grid-compliant folds along a vector.
  */
 export class FoldSpecBasis {
     /**

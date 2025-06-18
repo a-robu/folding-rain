@@ -4,9 +4,9 @@ import {
     CardinalSides,
     triangleIdxToKey,
     triangleIdxFromKey,
-    isIntegerCoordinate,
+    isOnGrid,
     isHalfIntegerCoordinate,
-    isOnTetrakisLattice,
+    isOnTetrakisGrid,
     roundToHalfIntegers,
     allVertices,
     allTriangleIdxs,
@@ -14,7 +14,7 @@ import {
     squareDiagonalsFromVertex,
     SIDE,
     areHalfCoversValid
-} from "@/lib/tetrakis"
+} from "@/lib/grid"
 import { FOLD_COVER } from "@/lib/fold-spec"
 
 describe("triangleIdxToKey / triangleIdxFromKey", () => {
@@ -91,14 +91,14 @@ describe("squareDiagonalsFromVertex", () => {
 
 describe("isIntegerCoordinate", () => {
     test("returns true for integer coordinates", () => {
-        expect(isIntegerCoordinate(new paper.Point(1, 2))).toBe(true)
-        expect(isIntegerCoordinate(new paper.Point(0, 0))).toBe(true)
-        expect(isIntegerCoordinate(new paper.Point(-3, 5))).toBe(true)
+        expect(isOnGrid(new paper.Point(1, 2))).toBe(true)
+        expect(isOnGrid(new paper.Point(0, 0))).toBe(true)
+        expect(isOnGrid(new paper.Point(-3, 5))).toBe(true)
     })
     test("returns false for non-integer coordinates", () => {
-        expect(isIntegerCoordinate(new paper.Point(1.5, 2))).toBe(false)
-        expect(isIntegerCoordinate(new paper.Point(1, 2.5))).toBe(false)
-        expect(isIntegerCoordinate(new paper.Point(1.1, 2.9))).toBe(false)
+        expect(isOnGrid(new paper.Point(1.5, 2))).toBe(false)
+        expect(isOnGrid(new paper.Point(1, 2.5))).toBe(false)
+        expect(isOnGrid(new paper.Point(1.1, 2.9))).toBe(false)
     })
 })
 
@@ -115,23 +115,23 @@ describe("isHalfIntegerCoordinate", () => {
     })
 })
 
-describe("isOnTetrakisLattice", () => {
+describe("isOnTetrakisGrid", () => {
     test("returns true for integer coordinates (corners)", () => {
-        expect(isOnTetrakisLattice(new paper.Point(0, 0))).toBe(true)
-        expect(isOnTetrakisLattice(new paper.Point(2, 2))).toBe(true)
-        expect(isOnTetrakisLattice(new paper.Point(-3, 5))).toBe(true)
+        expect(isOnTetrakisGrid(new paper.Point(0, 0))).toBe(true)
+        expect(isOnTetrakisGrid(new paper.Point(2, 2))).toBe(true)
+        expect(isOnTetrakisGrid(new paper.Point(-3, 5))).toBe(true)
     })
     test("returns true for both coordinates half-integers (centers)", () => {
-        expect(isOnTetrakisLattice(new paper.Point(0.5, 1.5))).toBe(true)
-        expect(isOnTetrakisLattice(new paper.Point(-1.5, 2.5))).toBe(true)
+        expect(isOnTetrakisGrid(new paper.Point(0.5, 1.5))).toBe(true)
+        expect(isOnTetrakisGrid(new paper.Point(-1.5, 2.5))).toBe(true)
     })
     test("returns false for edge cases (one integer, one half-integer)", () => {
-        expect(isOnTetrakisLattice(new paper.Point(1, 1.5))).toBe(false)
-        expect(isOnTetrakisLattice(new paper.Point(0.5, 2))).toBe(false)
+        expect(isOnTetrakisGrid(new paper.Point(1, 1.5))).toBe(false)
+        expect(isOnTetrakisGrid(new paper.Point(0.5, 2))).toBe(false)
     })
     test("returns false for non-half-integer coordinates", () => {
-        expect(isOnTetrakisLattice(new paper.Point(0.1, 0.1))).toBe(false)
-        expect(isOnTetrakisLattice(new paper.Point(1.25, 1.75))).toBe(false)
+        expect(isOnTetrakisGrid(new paper.Point(0.1, 0.1))).toBe(false)
+        expect(isOnTetrakisGrid(new paper.Point(1.25, 1.75))).toBe(false)
     })
 })
 

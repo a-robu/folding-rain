@@ -19,8 +19,8 @@ import {
     roundToHalfIntegers,
     squareDiagonalsFromVertex,
     areHalfCoversValid,
-    isIntegerCoordinate
-} from "@/lib/tetrakis"
+    isOnGrid
+} from "@/lib/grid"
 import { withCommonArgs } from "./common-args"
 import type { CommonStoryArgs } from "./common-args"
 import { FoldSpecBasis } from "@/lib/fold-spec-basis"
@@ -92,7 +92,7 @@ function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise
         let foldCovers = halfCoversAreValid ? FOLD_COVERS : [FOLD_COVER.Full]
         let foldCover = random.choice(foldCovers)
         let unfoldPlan = FoldSpec.fromEndPoints(startVertex, endVertex, foldCover)
-        if (!isIntegerCoordinate(startVertex)) {
+        if (!isOnGrid(startVertex)) {
             // this needs fixing
             continue
             // let isAxisAligned = vector.x == 0 || vector.y == 0

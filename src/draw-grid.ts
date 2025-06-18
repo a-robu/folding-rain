@@ -113,15 +113,4 @@ export function drawGrid(layer: paper.Layer, bounds: paper.Rectangle) {
             layer.addChild(path)
         }
     }
-    // Square center dots
-    for (let x = xMin; x < xMax; x++) {
-        for (let y = yMin; y < yMax; y++) {
-            let px = flipX ? xMax - (x - xMin) - 0.5 : x + 0.5
-            let py = flipY ? yMax - (y - yMin) - 0.5 : y + 0.5
-            let gridPoint = new paper.Point(px, py)
-            let path = new paper.Path.Circle(gridPoint, GRID_DOTS_RADIUS)
-            path.fillColor = GRID_DOTS_COLOR
-            layer.addChild(path)
-        }
-    }
 }

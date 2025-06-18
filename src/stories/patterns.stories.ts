@@ -5,39 +5,41 @@ import { sleep } from "@/lib/time"
 import { rigamarole } from "./rigamarole"
 import { withCommonArgs } from "./common-args"
 import type { CommonStoryArgs } from "./common-args"
-import { roundToHalfIntegers } from "@/lib/tetrakis"
+import { visualiseFoldSpec } from "./visualize-fold"
 
 export default {
     title: "Patterns"
 }
 
 export const threeTriangles = withCommonArgs(function threeTriangles(args: CommonStoryArgs) {
-    let bounds = new paper.Rectangle(0, 0, 3, 4)
-    let { container, board } = rigamarole({
+    let bounds = new paper.Rectangle(-1, -1, 6, 6)
+    let { container, board, annotationsLayer } = rigamarole({
         bounds,
         zoom: 80,
         ...args
     })
-    async function doFolds() {
-        board.foldAsync(
-            1,
-            FoldSpec.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1)),
-            FOLD_ACTION.Create
-        )
-        await sleep(1000)
-        board.foldAsync(
-            2,
-            FoldSpec.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4)),
-            FOLD_ACTION.Create
-        )
-        await sleep(1000)
-        board.foldAsync(
-            3,
-            FoldSpec.fromEndPoints(new paper.Point(2.5, 0.5), new paper.Point(2.5, 1.5)),
-            FOLD_ACTION.Create
-        )
-    }
-    doFolds()
+    ;(async () => {
+        let spec1 = FoldSpec.fromEndPoints(new paper.Point(0, 0), new paper.Point(1, 1))
+        let viz1 = visualiseFoldSpec(annotationsLayer, spec1, FOLD_ACTION.Create)
+        board.foldAsync(1, spec1, FOLD_ACTION.Create)
+        await sleep(500)
+        viz1.remove()
+        await sleep(500)
+
+        let spec2 = FoldSpec.fromEndPoints(new paper.Point(0, 2), new paper.Point(2, 4))
+        let viz2 = visualiseFoldSpec(annotationsLayer, spec2, FOLD_ACTION.Create)
+        board.foldAsync(2, spec2, FOLD_ACTION.Create)
+        await sleep(500)
+        viz2.remove()
+        await sleep(500)
+
+        let spec3 = FoldSpec.fromEndPoints(new paper.Point(3, 0), new paper.Point(3, 2))
+        let viz3 = visualiseFoldSpec(annotationsLayer, spec3, FOLD_ACTION.Create)
+        board.foldAsync(3, spec3, FOLD_ACTION.Create)
+        await sleep(500)
+        viz3.remove()
+        await sleep(500)
+    })()
     return container
 })
 

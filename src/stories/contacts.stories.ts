@@ -4,12 +4,13 @@ import { withCommonArgs, type CommonStoryArgs } from "./common-args"
 import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold-spec"
 import { visualiseFoldSpec } from "./visualize-fold"
 import { verificationAllOk, verifyFold } from "@/lib/contacts"
+import { isOnGrid } from "@/lib/grid"
 
 export default {
     title: "Contacts"
 }
 
-function addTextBox(layer: paper.Layer, text: string, topLeft: paper.Point) {
+function addTextBox(layer: paper.Layer, text: string, topLeft: paper.Point): paper.Group {
     let group = new paper.Group()
     let pointText = new paper.PointText({
         content: text,
@@ -38,7 +39,7 @@ function addTextBox(layer: paper.Layer, text: string, topLeft: paper.Point) {
 }
 
 export const expandInnerFold = withCommonArgs(function expandInnerFold(args: CommonStoryArgs) {
-    let bounds = new paper.Rectangle(-2, -1, 12, 70)
+    let bounds = new paper.Rectangle(-2, -1, 12, 74)
     let { container, board, annotationsLayer } = rigamarole({
         bounds,
         zoom: 50,
@@ -50,31 +51,15 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
         {
             id: id++,
             points: [
-                new paper.Point(0, 0),
-                new paper.Point(1, 0),
-                new paper.Point(1, 1),
-                new paper.Point(0, 1)
+                new paper.Point(-1, -1),
+                new paper.Point(1, -1),
+                new paper.Point(1, 3),
+                new paper.Point(-1, 3)
             ],
-            fillColor: "#ffb6c1",
-            foldStart: new paper.Point(0.5, 0.5),
-            foldEnd: new paper.Point(1.5, 0.5),
-            offset: new paper.Point(0, 0),
+            fillColor: "#add8e6",
+            foldStart: new paper.Point(0, 1),
+            foldEnd: new paper.Point(2, 1),
             cover: FOLD_COVER.Full
-        },
-        {
-            id: id++,
-            points: [
-                new paper.Point(0, 0),
-                new paper.Point(2, 0),
-                new paper.Point(2, 2),
-                new paper.Point(0, 2)
-            ],
-            fillColor: "#90ee90",
-            foldStart: new paper.Point(0, 2),
-            foldEnd: new paper.Point(4, 2),
-            offset: new paper.Point(0, 3),
-            cover: FOLD_COVER.Left,
-            lockShapes: [[new paper.Point(0, 0), new paper.Point(2, 2), new paper.Point(0, 2)]]
         },
         {
             id: id++,
@@ -87,21 +72,33 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#add8e6",
             foldStart: new paper.Point(0, 1),
             foldEnd: new paper.Point(2, 1),
-            offset: new paper.Point(0, 3),
             cover: FOLD_COVER.Full
+        },
+        {
+            id: id++,
+            points: [
+                new paper.Point(-1, 0),
+                new paper.Point(1, 0),
+                new paper.Point(1, 2),
+                new paper.Point(-1, 2)
+            ],
+            fillColor: "#90ee90",
+            foldStart: new paper.Point(-1, 2),
+            foldEnd: new paper.Point(3, 2),
+            cover: FOLD_COVER.Left,
+            lockShapes: [[new paper.Point(-1, 0), new paper.Point(1, 2), new paper.Point(-1, 2)]]
         },
         {
             id: id++,
             points: [
                 new paper.Point(0, 0),
                 new paper.Point(1, 0),
-                new paper.Point(1, 3),
-                new paper.Point(0, 3)
+                new paper.Point(1, 4),
+                new paper.Point(0, 4)
             ],
             fillColor: "#d8bff8",
-            foldStart: new paper.Point(-0.5, 1.5),
-            foldEnd: new paper.Point(2.5, 1.5),
-            offset: new paper.Point(0, 3),
+            foldStart: new paper.Point(-1, 2),
+            foldEnd: new paper.Point(3, 2),
             cover: FOLD_COVER.Full
         },
         {
@@ -117,25 +114,23 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#bfe0ff",
             foldStart: new paper.Point(0, 1),
             foldEnd: new paper.Point(2, 1),
-            offset: new paper.Point(0, 4),
             cover: FOLD_COVER.Full
         },
         {
             id: id++,
             points: [
-                new paper.Point(-1, 0),
-                new paper.Point(1, 0),
+                new paper.Point(-1, -1),
+                new paper.Point(1, -1),
                 new paper.Point(1, 3),
                 new paper.Point(2, 2),
-                new paper.Point(2, 0),
-                new paper.Point(3, 0),
+                new paper.Point(2, -1),
+                new paper.Point(3, -1),
                 new paper.Point(3, 4),
                 new paper.Point(-1, 4)
             ],
             fillColor: "#ffe4b5",
-            foldStart: new paper.Point(-0.5, 1.5),
-            foldEnd: new paper.Point(2.5, 1.5),
-            offset: new paper.Point(0, 4),
+            foldStart: new paper.Point(-1, 1),
+            foldEnd: new paper.Point(3, 1),
             cover: FOLD_COVER.Full
         },
         {
@@ -153,7 +148,6 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#ddccdd",
             foldStart: new paper.Point(0, 1),
             foldEnd: new paper.Point(2, 1),
-            offset: new paper.Point(0, 5),
             cover: FOLD_COVER.Full
         },
         {
@@ -171,7 +165,6 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#ffcc99",
             foldStart: new paper.Point(0, 1),
             foldEnd: new paper.Point(2, 1),
-            offset: new paper.Point(0, 4),
             cover: FOLD_COVER.Full
         },
         {
@@ -185,14 +178,9 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#ffb6c1",
             foldStart: new paper.Point(0, 1),
             foldEnd: new paper.Point(2, 1),
-            offset: new paper.Point(0, 4),
             cover: FOLD_COVER.Full,
             otherShapes: {
-                [-(id - 1)]: [
-                    new paper.Point(2, 2),
-                    new paper.Point(3, 2),
-                    new paper.Point(2.5, 2.5)
-                ]
+                [-(id - 1)]: [new paper.Point(2, 2), new paper.Point(3, 2), new paper.Point(3, 3)]
             }
         },
         {
@@ -206,14 +194,9 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#ffb6c1",
             foldStart: new paper.Point(0, 1),
             foldEnd: new paper.Point(2, 1),
-            offset: new paper.Point(0, 3),
             cover: FOLD_COVER.Full,
             otherShapes: {
-                [-(id - 1)]: [
-                    new paper.Point(2, 1),
-                    new paper.Point(3, 1),
-                    new paper.Point(2.5, 1.5)
-                ]
+                [-(id - 1)]: [new paper.Point(2, 1), new paper.Point(3, 1), new paper.Point(3, 2)]
             }
         },
         {
@@ -227,7 +210,6 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#99ccff",
             foldStart: new paper.Point(-1, 2),
             foldEnd: new paper.Point(3, 2),
-            offset: new paper.Point(0, 3),
             cover: FOLD_COVER.Full,
             otherShapes: {
                 [-(id - 1)]: [
@@ -241,27 +223,6 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
         {
             id: id++,
             points: [
-                new paper.Point(-2, 0),
-                new paper.Point(1, 0),
-                new paper.Point(1, 5),
-                new paper.Point(-2, 5)
-            ],
-            fillColor: "#99ccff",
-            foldStart: new paper.Point(-1.5, 2.5),
-            foldEnd: new paper.Point(3.5, 2.5),
-            offset: new paper.Point(0, 5),
-            cover: FOLD_COVER.Full,
-            otherShapes: {
-                [-(id - 1)]: [
-                    new paper.Point(2, 2),
-                    new paper.Point(2.5, 2.5),
-                    new paper.Point(2, 3)
-                ]
-            }
-        },
-        {
-            id: id++,
-            points: [
                 new paper.Point(0, 0),
                 new paper.Point(1, 0),
                 new paper.Point(1, 2),
@@ -270,35 +231,9 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#ffb6c1",
             foldStart: new paper.Point(0, 1),
             foldEnd: new paper.Point(2, 1),
-            offset: new paper.Point(0, 6),
             cover: FOLD_COVER.Full,
             otherLockShapes: {
-                [-(id - 1)]: [
-                    new paper.Point(2, 2),
-                    new paper.Point(3, 2),
-                    new paper.Point(2.5, 2.5)
-                ]
-            }
-        },
-        {
-            id: id++,
-            points: [
-                new paper.Point(0, 0),
-                new paper.Point(1, 0),
-                new paper.Point(1, 2),
-                new paper.Point(0, 2)
-            ],
-            fillColor: "#ffb6c1",
-            foldStart: new paper.Point(0, 1),
-            foldEnd: new paper.Point(2, 1),
-            offset: new paper.Point(0, 3),
-            cover: FOLD_COVER.Full,
-            otherLockShapes: {
-                [-(id - 1)]: [
-                    new paper.Point(2, 1),
-                    new paper.Point(3, 1),
-                    new paper.Point(2.5, 1.5)
-                ]
+                [-(id - 1)]: [new paper.Point(2, 2), new paper.Point(3, 2), new paper.Point(3, 3)]
             }
         },
         {
@@ -312,7 +247,6 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor: "#99ccff",
             foldStart: new paper.Point(-1, 2),
             foldEnd: new paper.Point(3, 2),
-            offset: new paper.Point(0, 3),
             cover: FOLD_COVER.Full,
             otherLockShapes: {
                 [-(id - 1)]: [
@@ -326,27 +260,22 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
         {
             id: id++,
             points: [
-                new paper.Point(-2, 0),
-                new paper.Point(1, 0),
-                new paper.Point(1, 5),
-                new paper.Point(-2, 5)
+                new paper.Point(-4, 0),
+                new paper.Point(0, 0),
+                new paper.Point(0, 6),
+                new paper.Point(-4, 6)
             ],
             fillColor: "#99ccff",
-            foldStart: new paper.Point(-1.5, 2.5),
-            foldEnd: new paper.Point(3.5, 2.5),
-            offset: new paper.Point(0, 5),
+            foldStart: new paper.Point(-3, 3),
+            foldEnd: new paper.Point(3, 3),
             cover: FOLD_COVER.Full,
             otherLockShapes: {
-                [-(id - 1)]: [
-                    new paper.Point(2, 2),
-                    new paper.Point(2.5, 2.5),
-                    new paper.Point(2, 3)
-                ]
+                [-(id - 1)]: [new paper.Point(1, 3), new paper.Point(2, 3), new paper.Point(1, 4)]
             }
         }
     ]
 
-    let currentOffset = new paper.Point(0, 0)
+    let bottomOfPrevious = 0
     shapes.forEach(
         ({
             id,
@@ -354,22 +283,17 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             fillColor,
             foldStart,
             foldEnd,
-            offset,
             cover,
             lockShapes,
             otherShapes,
             otherLockShapes
         }) => {
-            currentOffset = currentOffset.add(offset)
+            let currentOffset = new paper.Point(0, bottomOfPrevious + 1)
             let path = new paper.Path(points)
             path.translate(currentOffset)
             let shape = board.addShape(id, path)
             shape.fillColor = new paper.Color(fillColor)
-            let fold = FoldSpec.fromEndPoints(
-                foldStart.add(currentOffset),
-                foldEnd.add(currentOffset),
-                cover
-            )
+            let hingeRaisesError = false
             if (lockShapes) {
                 for (let path of lockShapes) {
                     let region = new paper.Path(path)
@@ -401,6 +325,29 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
                     board.lockShapes.addChild(region)
                 }
             }
+            try {
+                FoldSpec.fromEndPoints(
+                    foldStart.add(currentOffset),
+                    foldEnd.add(currentOffset),
+                    cover
+                )
+            } catch (e) {
+                hingeRaisesError = true
+            }
+            if (!isOnGrid(foldStart) || !isOnGrid(foldEnd) || hingeRaisesError) {
+                // just draw two red points
+                let startPoint = new paper.Path.Circle(foldStart.add(currentOffset), 0.1)
+                startPoint.fillColor = new paper.Color("#0000ff")
+                let endPoint = new paper.Path.Circle(foldEnd.add(currentOffset), 0.1)
+                endPoint.fillColor = new paper.Color("#0000ff")
+                bottomOfPrevious += Math.ceil(shape.bounds.height + 1)
+                return
+            }
+            let fold = FoldSpec.fromEndPoints(
+                foldStart.add(currentOffset),
+                foldEnd.add(currentOffset),
+                cover
+            )
             visualiseFoldSpec(annotationsLayer, fold, FOLD_ACTION.Expand)
             let verification = verifyFold(board, bounds, fold, FOLD_ACTION.Expand, shape.data.id)
             const formatted = Object.entries(verification as any)
@@ -410,11 +357,18 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
                         .join("\n")
                 )
                 .join("\n")
-            addTextBox(annotationsLayer, formatted, new paper.Point(4, 0).add(currentOffset))
+            let textBox = addTextBox(
+                annotationsLayer,
+                formatted,
+                new paper.Point(4, 0).add(currentOffset)
+            )
             let circle = new paper.Path.Circle(new paper.Point(3.7, 0.11).add(currentOffset), 0.1)
             circle.fillColor = verificationAllOk(verification)
                 ? new paper.Color("#00ff00")
                 : new paper.Color("#ff0000")
+            bottomOfPrevious = Math.ceil(
+                Math.max(shape.bounds.bottom, fold.toQuad().bounds.bottom, textBox.bounds.bottom)
+            )
         }
     )
 

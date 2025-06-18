@@ -34,7 +34,6 @@ export function visualiseFoldSpec(
         } else if (shapeChange == SHAPE_CHANGE.Remove) {
             clone.fillColor = new paper.Color("#f006")
         }
-        annotationsLayer.addChild(clone)
         createdBits.addChild(clone)
         let text = new paper.PointText({
             content: symbol[shapeChange],
@@ -43,11 +42,9 @@ export function visualiseFoldSpec(
             fontSize: 0.4,
             justification: "center"
         })
-        annotationsLayer.addChild(text)
         createdBits.addChild(text)
         let firstHingeDot = new paper.Path.Circle(foldSpec.hinges[0], 0.05)
         firstHingeDot.fillColor = new paper.Color("#555a")
-        annotationsLayer.addChild(firstHingeDot)
         createdBits.addChild(firstHingeDot)
     }
     let endArrow = new paper.Path([
@@ -57,7 +54,7 @@ export function visualiseFoldSpec(
     ])
     endArrow.strokeColor = new paper.Color("#555d")
     endArrow.strokeWidth = 0.04
-    annotationsLayer.addChild(endArrow)
     createdBits.addChild(endArrow)
+    annotationsLayer.addChild(createdBits)
     return createdBits
 }

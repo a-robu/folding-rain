@@ -12,7 +12,7 @@ describe("FoldSpec", () => {
             expect(fold.hinges[1]).toBePaperPoint(new paper.Point(0, 1))
         })
 
-        it("throws if endpoints are not on the lattice", () => {
+        it("throws if endpoints are not on the grid", () => {
             expect(() =>
                 FoldSpec.fromEndPoints(new paper.Point(0.1, 0), new paper.Point(2, 0))
             ).toThrow()

@@ -49,6 +49,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
     let id = 1
     const shapes = [
         {
+            // inner fold fully contained with paddding
+            // all checks pass
             id: id++,
             points: [
                 new paper.Point(-1, -1),
@@ -62,6 +64,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             cover: FOLD_COVER.Full
         },
         {
+            // inner fold fully contained snugly
+            // all checks pass
             id: id++,
             points: [
                 new paper.Point(0, 0),
@@ -75,6 +79,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             cover: FOLD_COVER.Full
         },
         {
+            // inner fold stuck on a lock
+            // near.clearOfLocks == false
             id: id++,
             points: [
                 new paper.Point(-1, 0),
@@ -89,6 +95,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             lockShapes: [[new paper.Point(-1, 0), new paper.Point(1, 2), new paper.Point(-1, 2)]]
         },
         {
+            // inner fold sticking out of the shape
+            // near.fullyContained == false
             id: id++,
             points: [
                 new paper.Point(0, 0),
@@ -102,6 +110,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             cover: FOLD_COVER.Full
         },
         {
+            // outer fold snugly clear of self
+            // all checks pass
             id: id++,
             points: [
                 new paper.Point(0, 0),
@@ -117,23 +127,27 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             cover: FOLD_COVER.Full
         },
         {
+            // outer fold self-collision with overlap
+            // far.noSelfCollision == false
             id: id++,
             points: [
-                new paper.Point(-1, -1),
-                new paper.Point(1, -1),
-                new paper.Point(1, 3),
-                new paper.Point(2, 2),
-                new paper.Point(2, -1),
-                new paper.Point(3, -1),
-                new paper.Point(3, 4),
-                new paper.Point(-1, 4)
+                new paper.Point(-1, 0),
+                new paper.Point(1, 0),
+                new paper.Point(1, 4),
+                new paper.Point(2, 3),
+                new paper.Point(2, 0),
+                new paper.Point(3, 0),
+                new paper.Point(3, 5),
+                new paper.Point(-1, 5)
             ],
             fillColor: "#ffe4b5",
-            foldStart: new paper.Point(-1, 1),
-            foldEnd: new paper.Point(3, 1),
+            foldStart: new paper.Point(-1, 2),
+            foldEnd: new paper.Point(3, 2),
             cover: FOLD_COVER.Full
         },
         {
+            // outer fold self-collision in one point
+            // far.noSelfCollision == false
             id: id++,
             points: [
                 new paper.Point(0, 0),
@@ -151,6 +165,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             cover: FOLD_COVER.Full
         },
         {
+            // outer fold self-collision along an edge
+            // far.noSelfCollision == false
             id: id++,
             points: [
                 new paper.Point(0, 0),
@@ -168,6 +184,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             cover: FOLD_COVER.Full
         },
         {
+            // outer fold clear of other shape
+            // all checks pass
             id: id++,
             points: [
                 new paper.Point(0, 0),
@@ -184,6 +202,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             }
         },
         {
+            // outer fold collision with other shape in one point
+            // far.clearOfShapes == false
             id: id++,
             points: [
                 new paper.Point(0, 0),
@@ -200,6 +220,7 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             }
         },
         {
+            // outer fold collision with other shape with overlap
             id: id++,
             points: [
                 new paper.Point(-1, 0),
@@ -221,6 +242,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             }
         },
         {
+            // outer fold clear of other shape lock
+            // far.clearOfLocks == true
             id: id++,
             points: [
                 new paper.Point(0, 0),
@@ -237,6 +260,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             }
         },
         {
+            // outer fold collision with lock with overlap
+            // far.clearOfLocks == false
             id: id++,
             points: [
                 new paper.Point(-1, 0),
@@ -258,6 +283,8 @@ export const expandInnerFold = withCommonArgs(function expandInnerFold(args: Com
             }
         },
         {
+            // outer fold surriounding a lock
+            // far.clearOfLocks == false
             id: id++,
             points: [
                 new paper.Point(-4, 0),

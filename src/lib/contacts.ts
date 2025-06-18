@@ -108,8 +108,8 @@ export function verifyFold(
                 clearOfLocks: !nearIntersectsLockShape
             },
             far: {
-                noPerimeterContact: !hasVertexContacts(farUnion),
-                noAreaOverlap: Math.abs(farIntersection.area) < 0.01,
+                noSelfCollision:
+                    !hasVertexContacts(farUnion) && Math.abs(farIntersection.area) < 0.01,
                 clearOfShapes: clearOfOtherShapes,
                 clearOfLocks: !outerIntersectsLockShapes,
                 inBounds: bounds.contains(far.bounds)

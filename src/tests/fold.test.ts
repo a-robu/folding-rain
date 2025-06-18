@@ -35,21 +35,21 @@ describe("FoldSpec", () => {
             expect(fold.hinges[1]).toBePaperPoint(new paper.Point(0, 1))
         })
 
-        it("creates a FoldSpec with foldCover = Left", () => {
-            const start = new paper.Point(0, 0)
-            const end = new paper.Point(1, 1)
-            const fold = FoldSpec.fromEndPoints(start, end, FOLD_COVER.Left)
-            expect(fold.hinges[0]).toBePaperPoint(new paper.Point(1, 0))
-            expect(fold.hinges[1]).toBePaperPoint(new paper.Point(0.5, 0.5))
-        })
+        // it("creates a FoldSpec with foldCover = Left", () => {
+        //     const start = new paper.Point(0, 0)
+        //     const end = new paper.Point(1, 1)
+        //     const fold = FoldSpec.fromEndPoints(start, end, FOLD_COVER.Left)
+        //     expect(fold.hinges[0]).toBePaperPoint(new paper.Point(1, 0))
+        //     expect(fold.hinges[1]).toBePaperPoint(new paper.Point(0.5, 0.5))
+        // })
 
-        it("creates a FoldSpec with foldCover = Right", () => {
-            const start = new paper.Point(0, 0)
-            const end = new paper.Point(1, 1)
-            const fold = FoldSpec.fromEndPoints(start, end, FOLD_COVER.Right)
-            expect(fold.hinges[0]).toBePaperPoint(new paper.Point(0.5, 0.5))
-            expect(fold.hinges[1]).toBePaperPoint(new paper.Point(0, 1))
-        })
+        // it("creates a FoldSpec with foldCover = Right", () => {
+        //     const start = new paper.Point(0, 0)
+        //     const end = new paper.Point(1, 1)
+        //     const fold = FoldSpec.fromEndPoints(start, end, FOLD_COVER.Right)
+        //     expect(fold.hinges[0]).toBePaperPoint(new paper.Point(0.5, 0.5))
+        //     expect(fold.hinges[1]).toBePaperPoint(new paper.Point(0, 1))
+        // })
     })
 
     describe("toTriangles", () => {

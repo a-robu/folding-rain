@@ -7,23 +7,35 @@ describe("FoldSpec", () => {
         it("creates a FoldSpec from valid endpoints", () => {
             const start = new paper.Point(0, 0)
             const end = new paper.Point(1, 1)
-            const fold = FoldSpec.fromEndPoints(start, end)
+            const fold = FoldSpec.fromEndPoints(start, end, FOLD_COVER.Full)
             expect(fold.hinges[0]).toBePaperPoint(new paper.Point(1, 0))
             expect(fold.hinges[1]).toBePaperPoint(new paper.Point(0, 1))
         })
 
         it("throws if endpoints are not on the grid", () => {
             expect(() =>
-                FoldSpec.fromEndPoints(new paper.Point(0.1, 0), new paper.Point(2, 0))
+                FoldSpec.fromEndPoints(
+                    new paper.Point(0.1, 0),
+                    new paper.Point(2, 0),
+                    FOLD_COVER.Full
+                )
             ).toThrow()
             expect(() =>
-                FoldSpec.fromEndPoints(new paper.Point(0, 0), new paper.Point(2.1, 0))
+                FoldSpec.fromEndPoints(
+                    new paper.Point(0, 0),
+                    new paper.Point(2.1, 0),
+                    FOLD_COVER.Full
+                )
             ).toThrow()
         })
 
         it("throws if endpoints are equal", () => {
             expect(() =>
-                FoldSpec.fromEndPoints(new paper.Point(1, 1), new paper.Point(1, 1))
+                FoldSpec.fromEndPoints(
+                    new paper.Point(1, 1),
+                    new paper.Point(1, 1),
+                    FOLD_COVER.Full
+                )
             ).toThrow()
         })
 
@@ -54,7 +66,11 @@ describe("FoldSpec", () => {
 
     describe("toTriangles", () => {
         it("returns two triangles with correct points", () => {
-            const fold = FoldSpec.fromEndPoints(new paper.Point(0, 0), new paper.Point(2, 0))
+            const fold = FoldSpec.fromEndPoints(
+                new paper.Point(0, 0),
+                new paper.Point(2, 0),
+                FOLD_COVER.Full
+            )
             const { near, far } = fold.toTriangles()
             expect(near.area).above(0)
             expect(far.area).above(0)
@@ -68,7 +84,11 @@ describe("FoldSpec", () => {
 
     describe("toQuad", () => {
         it("returns a closed quad with correct points", () => {
-            const fold = FoldSpec.fromEndPoints(new paper.Point(0, 0), new paper.Point(2, 0))
+            const fold = FoldSpec.fromEndPoints(
+                new paper.Point(0, 0),
+                new paper.Point(2, 0),
+                FOLD_COVER.Full
+            )
             const quad = fold.toQuad()
             expect(quad.area).above(0)
             expect(quad.segments.length).toBe(4)

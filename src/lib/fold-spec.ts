@@ -65,6 +65,9 @@ export class FoldSpec {
     end: paper.Point
 
     constructor(start: paper.Point, hinges: [paper.Point, paper.Point], end: paper.Point) {
+        if (start.x === end.x && start.y === end.y) {
+            throw new Error(`Start and end points cannot be the same: (${start.x}, ${start.y})`)
+        }
         this.start = start
         this.hinges = hinges
         this.end = end

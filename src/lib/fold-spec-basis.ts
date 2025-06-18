@@ -81,18 +81,15 @@ export class FoldSpecBasis {
         fullCover: boolean
     ) {
         let segmentVector = toVertex.subtract(fromVertex)
-        let linearEquation = hingeLengthFactors(fromVertex, segmentVector, fullCover)
-        if (linearEquation === null) {
-            return null
-        }
-        if (linearEquation.constant + linearEquation.coefficient > segmentVector.length) {
+        let coefficient = hingeLengthFactors(fromVertex, segmentVector, fullCover)
+        if (coefficient > segmentVector.length) {
             // Refuse to create a basis which does not have any solutions
             return null
         }
         return new FoldSpecBasis(
             fromVertex,
             segmentVector.normalize(),
-            linearEquation,
+            coefficient,
             segmentVector.length,
             fullCover,
             rightToLeft
@@ -100,11 +97,12 @@ export class FoldSpecBasis {
     }
 
     maxMultiplier(lengthLimit?: number) {
-        let limit = this.segmentLength
+        let appliedLimit = this.segmentLength
         if (lengthLimit !== undefined) {
-            limit = Math.min(limit, lengthLimit)
+            appliedLimit = Math.min(appliedLimit, Math.max(this.coefficient, lengthLimit))
         }
-        return Math.floor(limit / this.coefficient + 0.001)
+        console.log(Math.floor(appliedLimit / this.coefficient + 0.001))
+        return Math.floor(appliedLimit / this.coefficient + 0.001)
     }
 
     getAll() {

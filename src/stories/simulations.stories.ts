@@ -16,7 +16,7 @@ import { exponentialDelay, sleep } from "@/lib/time"
 import type { Board } from "@/board"
 import {
     allVertices,
-    roundToHalfIntegers,
+    // roundToHalfIntegers,
     squareDiagonalsFromVertex,
     areHalfCoversValid,
     isOnGrid
@@ -49,31 +49,10 @@ function randomlyChooseFold(
         normalise([100, 50, 25, 10, 5])
     )
     let foldSpec = basis.atMultiplier(basis.maxMultiplier(maxMultiplier))
-    let verification = verifyFold(
-        shape.data.board,
-        bounds,
-        foldSpec,
-        FOLD_ACTION.Expand,
-        shape.data.id
-    )
+    let verification = verifyFold(shape.data.board, foldSpec, FOLD_ACTION.Expand, shape.data.id)
     if (!verificationAllOk(verification)) {
         return null
     }
-    // let triangles = foldSpec.toTriangles()
-    // if (!bounds.contains(triangles.far.bounds)) {
-    //     return null
-    // }
-    // let innerIntersection = triangles.near.intersect(shape)
-    // let innerAreaDiff = Math.abs((innerIntersection as paper.Path).area - triangles.near.area)
-    // if (innerAreaDiff > 0.01) {
-    //     return null
-    // }
-    // let outerIntersection = triangles.far.intersect(shape)
-    // let outerArea = (outerIntersection as paper.Path).area
-    // if (outerArea > 0.01) {
-    //     return null
-    // }
-    // if (intersection.area)
     return foldSpec
 }
 
@@ -173,6 +152,7 @@ export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonSto
         FoldSpec.fromEndPoints(new paper.Point(2, 1), new paper.Point(0, 1), FOLD_COVER.Right),
         FOLD_ACTION.Create
     )
+    board.shapes.get(1)!.fillColor = new paper.Color("#99ccff")
     let expansionRandom = new XORShift(123456789)
     const columnOffset = new paper.Point(10, 0)
     for (let i = 1; i <= 30; i++) {
@@ -202,7 +182,7 @@ export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonSto
             }
         }
         foreverAnimate()
-        visualiseFoldSpec(annotationsLayer, foldSpec, FOLD_ACTION.Expand)
+        annotationsLayer.addChild(visualiseFoldSpec(foldSpec, FOLD_ACTION.Expand))
         let foldSpecTriangles = foldSpec.toTriangles()
         let shapeTop = Math.min(
             oldShape.bounds.top,

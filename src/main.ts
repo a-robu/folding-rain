@@ -7,8 +7,8 @@ function computeBounds() {
     return new paper.Rectangle(
         0,
         0,
-        Math.ceil(canvas.width / paper.view.zoom),
-        Math.ceil(canvas.height / paper.view.zoom)
+        Math.ceil(paper.view.bounds.width / paper.view.zoom),
+        Math.ceil(paper.view.bounds.height / paper.view.zoom)
     )
 }
 

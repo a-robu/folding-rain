@@ -30,7 +30,10 @@ export class ProceduralAnimation {
 
     async rainContinuously() {
         for (let i = 0; i < this.random.randRange(3, 10); i++) {
-            tryCreate(this.board, this.bounds, this.random, true)
+            let attempt = tryCreate(this.board, this.bounds, this.random)
+            if (attempt) {
+                await attempt
+            }
         }
         while (true) {
             if (this.random.float() < 0.01) {

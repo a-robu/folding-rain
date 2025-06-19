@@ -44,8 +44,6 @@ export function rigamarole({
     pixelWidth,
     pixelHeight,
     drawGridLines = true,
-    // gridAvailability = false,
-    // gridContactid = false,
     board,
     speedFactor = 1,
     showShapeId = false,
@@ -56,8 +54,6 @@ export function rigamarole({
     pixelWidth?: number
     pixelHeight?: number
     drawGridLines?: boolean
-    // gridAvailability?: boolean
-    // gridContactid?: boolean
     board?: Board
     speedFactor?: number
     showShapeId?: boolean
@@ -85,15 +81,6 @@ export function rigamarole({
     window.board = board
 
     let contactVizInstance: ContactViz | undefined = undefined
-    // if (gridAvailability || gridContactid) {
-    //     contactVizInstance = new ContactViz(
-    //         bounds,
-    //         annotationsLayer,
-    //         board,
-    //         gridAvailability,
-    //         gridContactid
-    //     )
-    // }
 
     let labelVizInstance: LabelViz | undefined = undefined
     if (showShapeId) {

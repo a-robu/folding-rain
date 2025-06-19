@@ -1,6 +1,7 @@
 import paper from "paper"
 import { Board } from "./board"
 import { ProceduralAnimation } from "./spontaneous"
+import { GUI } from "./gui"
 
 function computeBounds() {
     return new paper.Rectangle(
@@ -25,8 +26,7 @@ if (urlParams.has("seed")) {
     seed = parseInt(urlParams.get("seed")!)
     console.log("Using provided seed:", seed)
 } else {
-    seed = Math.floor(Math.random() * 1000000)
-    // Log a link to the current seed for reproducibility
+    seed = Math.floor(Math.random() * 10000)
     console.log("Generating random seed:", seed, "Link:", window.location.href + "?seed=" + seed)
 }
 let boardLayer = new paper.Layer()
@@ -38,5 +38,15 @@ paper.view.center = initialBounds.center
 let proceduralAnimation = new ProceduralAnimation(board, initialBounds, seed)
 paper.view.onResize = onResize
 onResize()
+let gui = new GUI(paper.view)
+let tool = new paper.Tool()
+tool.onMouseDrag = (e: paper.ToolEvent) => {
+    onResize()
+    gui.onMouseDrag(e)
+}
+canvas.addEventListener("wheel", (e: WheelEvent) => {
+    onResize()
+    gui.onWheel(e)
+})
 
 proceduralAnimation.rainContinuously()

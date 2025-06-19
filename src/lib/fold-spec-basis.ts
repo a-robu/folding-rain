@@ -101,7 +101,6 @@ export class FoldSpecBasis {
         if (lengthLimit !== undefined) {
             appliedLimit = Math.min(appliedLimit, Math.max(this.coefficient, lengthLimit))
         }
-        console.log(Math.floor(appliedLimit / this.coefficient + 0.001))
         return Math.floor(appliedLimit / this.coefficient + 0.001)
     }
 

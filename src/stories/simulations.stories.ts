@@ -1,101 +1,17 @@
 import type PRNG from "random-seedable/@types/PRNG"
 import { XORShift } from "random-seedable"
 import paper from "paper"
-import {
-    FOLD_ACTION,
-    FOLD_COVER,
-    FOLD_COVERS,
-    FOLD_TEMPLATES,
-    FoldSpec,
-    SHAPE_CHANGE,
-    type FoldAction
-} from "@/lib/fold-spec"
-import { normalise, randomChoiceWeighted } from "@/lib/randomness"
+import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold-spec"
 import { rigamarole } from "./lib/rigamarole"
 import { exponentialDelay, sleep } from "@/lib/time"
-import type { Board } from "@/board"
-import {
-    allVertices,
-    // roundToHalfIntegers,
-    squareDiagonalsFromVertex,
-    areHalfCoversValid,
-    isOnGrid
-} from "@/lib/grid"
 import { withCommonArgs } from "./lib/common-args"
 import type { CommonStoryArgs } from "./lib/common-args"
-import { FoldSpecBasis } from "@/lib/fold-spec-basis"
 import { visualiseFoldSpec } from "./lib/visualize-fold"
-import { verificationAllOk, verifyFold } from "@/lib/contacts"
+import { ProceduralAnimation, randomlyChooseFold, tryCreate } from "@/spontaneous"
+import type { Board } from "@/board"
 
 export default {
     title: "Simulations"
-}
-
-function randomlyChooseFold(
-    shape: paper.Path,
-    random: PRNG,
-    bounds: paper.Rectangle
-): FoldSpec | null {
-    let clockwise = random.bool()
-    let fullCover = random.bool()
-    let foldBases = FoldSpecBasis.getAllBases(shape, clockwise, fullCover)
-    if (foldBases.length == 0) {
-        return null
-    }
-    let basis = random.choice(foldBases) as FoldSpecBasis
-    let maxMultiplier = randomChoiceWeighted(
-        random,
-        [1, 2, 3, 4, 5],
-        normalise([100, 50, 25, 10, 5])
-    )
-    let foldSpec = basis.atMultiplier(basis.maxMultiplier(maxMultiplier))
-    let verification = verifyFold(shape.data.board, foldSpec, FOLD_ACTION.Expand, shape.data.id)
-    if (!verificationAllOk(verification)) {
-        return null
-    }
-    return foldSpec
-}
-
-function tryCreate(board: Board, bounds: paper.Rectangle, random: PRNG): Promise<void> | null {
-    for (let attempt = 0; attempt < 10; attempt++) {
-        let startVertex = random.choice(allVertices(bounds))
-        let ray = random.choice(squareDiagonalsFromVertex(startVertex))
-        let rayMultiplier = randomChoiceWeighted(
-            random,
-            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            normalise([1000, 200, 50, 10, 5, 2, 1, 1, 1, 1])
-        )
-        let vector = ray.multiply(rayMultiplier)
-        let endVertex = roundToHalfIntegers(startVertex.add(vector))
-        let halfCoversAreValid = areHalfCoversValid(startVertex, vector)
-        let foldCovers = halfCoversAreValid ? FOLD_COVERS : [FOLD_COVER.Full]
-        let foldCover = random.choice(foldCovers)
-        let unfoldPlan = FoldSpec.fromEndPoints(startVertex, endVertex, foldCover)
-        if (!isOnGrid(startVertex)) {
-            // this needs fixing
-            continue
-            // let isAxisAligned = vector.x == 0 || vector.y == 0
-            // console.log("sus", {
-            //     startVertex,
-            //     vector,
-            //     endVertex,
-            //     foldCover,
-            //     halfCoversAreValid,
-            //     isAxisAligned
-            // })
-            // if (foldCover != FOLD_COVER.Full) {
-            //     if (isAxisAligned) {
-            //         continue // skip axis-aligned folds with non-full covers
-            //     }
-            // }
-        }
-        if (!verificationAllOk(verifyFold(board, bounds, unfoldPlan, FOLD_ACTION.Create))) {
-            continue
-        }
-        let unusedIndex = board.shapes.size == 0 ? 1 : Math.max(...board.shapes.keys()) + 1
-        return board.foldAsync(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
-    }
-    return null
 }
 
 export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
@@ -109,34 +25,7 @@ export const rain = withCommonArgs(function rain(args: CommonStoryArgs) {
         ...args,
         speedFactor: speedFactor
     })
-    ;(async () => {
-        let random = new XORShift(123456789)
-        await tryCreate(board, bounds, random)
-        while (true) {
-            if (random.float() < 0.03) {
-                tryCreate(board, bounds, random)
-            }
-            // if (random.float() < 0.8) {
-            //     await
-            // }
-            let shapeId: number | null = null
-            let foldSpec: FoldSpec | null = null
-            // for (let attempt = 0; attempt < 100; attempt++) {
-            shapeId = random.choice(Array.from(board.shapes.keys()))
-            let shape = board.shapes.get(shapeId!)
-            foldSpec = randomlyChooseFold(shape!, random, bounds)
-            // if (foldSpec) {
-            //     break
-            // }
-            // }
-            if (foldSpec) {
-                board.foldAsync(shapeId!, foldSpec, FOLD_ACTION.Expand)
-            }
-            // else {
-            await sleep(100 / speedFactor)
-            // }
-        }
-    })()
+    new ProceduralAnimation(board, bounds, 123456789).rainContinuously()
     return container
 })
 

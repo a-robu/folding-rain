@@ -1,7 +1,6 @@
 import paper from "paper"
 import { Board } from "@/board"
 import { drawGrid } from "@/draw-grid"
-import { XORShift } from "random-seedable"
 
 export function init(
     bounds: paper.Rectangle,

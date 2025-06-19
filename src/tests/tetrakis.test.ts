@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest"
 import paper from "paper"
-import { isOnGrid, allVertices, squareDiagonalsFromVertex, areHalfCoversValid } from "@/lib/grid"
+import { isOnGrid, allVertices, squareDiagonalRays, areHalfCoversValid } from "@/lib/grid"
 import { FOLD_COVER } from "@/lib/fold-spec"
 
 describe("allVertices", () => {

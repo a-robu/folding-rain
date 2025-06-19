@@ -21,7 +21,6 @@ export const expandSpecimenViewer = withCommonArgs(function expandSpecimenViewer
     })
     let { bounds, annotations, foldSpec } = applySpecimen(board, specimen)
     resize(bounds.expand(2))
-    console.log(annotations)
     annotationsLayer.addChild(annotations)
     console.log(
         "Verification:",

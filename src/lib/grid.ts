@@ -1,35 +1,5 @@
 import paper from "paper"
-
-// export const SIDE = {
-//     N: "N",
-//     E: "E",
-//     S: "S",
-//     W: "W"
-// } as const
-// export type CardinalSide = keyof typeof SIDE
-// export const CardinalSides: CardinalSide[] = [SIDE.N, SIDE.E, SIDE.S, SIDE.W]
-
-// export type TriangleIdx = {
-//     squareIdx: paper.Point
-//     cardinalSide: CardinalSide
-// }
-
-// export function triangleIdxToKey(triangleIdx: TriangleIdx) {
-//     return `${triangleIdx.squareIdx.x},${triangleIdx.squareIdx.y},${triangleIdx.cardinalSide}`
-// }
-
-// export function triangleIdxFromKey(key: string): TriangleIdx {
-//     const parts = key.split(",")
-//     if (parts.length !== 3) {
-//         throw new Error(`Invalid triangle index key: ${key}`)
-//     }
-//     const squareIdx = new paper.Point(parseFloat(parts[0]), parseFloat(parts[1]))
-//     const cardinalSide = parts[2] as CardinalSide
-//     if (!CardinalSides.includes(cardinalSide)) {
-//         throw new Error(`Invalid cardinal side: ${cardinalSide}`)
-//     }
-//     return { squareIdx, cardinalSide }
-// }
+import { FOLD_COVER, type FoldCover } from "./fold-spec"
 
 /**
  * Check if the coordinates are integers. Can be used both to check if
@@ -84,36 +54,17 @@ export function allVertices(rect: paper.Rectangle): paper.Point[] {
     return vertices
 }
 
-// export function allTriangleIdxs(rect: paper.Rectangle): TriangleIdx[] {
-//     let triangles: TriangleIdx[] = []
-//     for (let x = rect.x; x < rect.right; x++) {
-//         for (let y = rect.y; y < rect.bottom; y++) {
-//             const cell = new paper.Point(x, y)
-//             for (const direction of CardinalSides) {
-//                 triangles.push({
-//                     squareIdx: cell,
-//                     cardinalSide: direction
-//                 })
-//             }
-//         }
-//     }
-//     return triangles
-// }
-
 /**
  * Returns the rays that can be used to generate valid squares (aligned to the grid).
  * The ray sizes indicate the valid step size to take in the direction of the ray.
  * @param vertex - The vertex from which to generate the rays
  */
-export function squareDiagonalsFromVertex(vertex: paper.Point): paper.Point[] {
+export function squareDiagonalRays(vertex: paper.Point, foldCover: FoldCover): paper.Point[] {
     let templateRays: paper.Point[] = []
     if (isOnGrid(vertex)) {
         // Case where the vertices are along the (0, 0) subgrid
-        templateRays.push(new paper.Point(2, 0))
+        templateRays.push(new paper.Point(foldCover == FOLD_COVER.Full ? 2 : 1, 0))
         templateRays.push(new paper.Point(1, 1))
-    } else if (isOnTetrakisGrid(vertex)) {
-        // Case where the vertices are along the (.5, .5) subgrid
-        templateRays.push(new paper.Point(1, 0))
     } else {
         // Catch invalid vertices
         throw new Error(`Invalid vertex provided (${vertex.x}, ${vertex.y})`)
@@ -123,7 +74,7 @@ export function squareDiagonalsFromVertex(vertex: paper.Point): paper.Point[] {
     // So we can produce the remaining rays by rotating the template rays.
     for (let angle of [0, 90, 180, 270]) {
         for (let ray of templateRays) {
-            rotatedRays.push(roundToHalfIntegers(ray.rotate(angle, new paper.Point(0, 0))))
+            rotatedRays.push(roundToGrid(ray.rotate(angle, new paper.Point(0, 0))))
         }
     }
     return rotatedRays
@@ -152,40 +103,40 @@ export function hingeLengthFactors(
     }
 }
 
-export function areHalfCoversValid(vertex: paper.Point, ray: paper.Point) {
-    // Cases:
-    // If the vertex is on the corners of the squares
-    //   AND the ray is axis aligned
-    //     AND the length of the ray is divisible by 2, then the half covers are valid.
-    //     OTHERWISE, only the full cover is valid.
-    //   AND the ray is diagonal, all covers are valid
-    // If the vertex is in the middle of the squares
-    //   AND the ray is axis aligned
-    //     AND the length of the ray is divisible by 2, then the half covers are valid.
-    //     OTHERWISE, only the full cover is valid.
-    //   AND the ray is diagonal, all covers are valid
-    let isAxisAligned = ray.x == 0 || ray.y == 0
-    let halfCoversAreValid = false
-    if (isOnGrid(vertex)) {
-        // Vertex is on the corners of the squares
-        if (isAxisAligned) {
-            if (ray.length % 2 == 0) {
-                halfCoversAreValid = true
-            }
-        } else {
-            halfCoversAreValid = true
-        }
-    } else if (isOnTetrakisGrid(vertex)) {
-        // Vertex is in the middle of the squares
-        if (isAxisAligned) {
-            if (ray.length % 2 == 0) {
-                halfCoversAreValid = true
-            }
-        } else {
-            halfCoversAreValid = true
-        }
-    } else {
-        throw new Error(`Invalid vertex provided (${vertex.x}, ${vertex.y})`)
-    }
-    return halfCoversAreValid
-}
+// export function areHalfCoversValid(vertex: paper.Point, ray: paper.Point) {
+//     // Cases:
+//     // If the vertex is on the corners of the squares
+//     //   AND the ray is axis aligned
+//     //     AND the length of the ray is divisible by 2, then the half covers are valid.
+//     //     OTHERWISE, only the full cover is valid.
+//     //   AND the ray is diagonal, all covers are valid
+//     // If the vertex is in the middle of the squares
+//     //   AND the ray is axis aligned
+//     //     AND the length of the ray is divisible by 2, then the half covers are valid.
+//     //     OTHERWISE, only the full cover is valid.
+//     //   AND the ray is diagonal, all covers are valid
+//     let isAxisAligned = ray.x == 0 || ray.y == 0
+//     let halfCoversAreValid = false
+//     if (isOnGrid(vertex)) {
+//         // Vertex is on the corners of the squares
+//         if (isAxisAligned) {
+//             if (ray.length % 2 == 0) {
+//                 halfCoversAreValid = true
+//             }
+//         } else {
+//             halfCoversAreValid = true
+//         }
+//     } else if (isOnTetrakisGrid(vertex)) {
+//         // Vertex is in the middle of the squares
+//         if (isAxisAligned) {
+//             if (ray.length % 2 == 0) {
+//                 halfCoversAreValid = true
+//             }
+//         } else {
+//             halfCoversAreValid = true
+//         }
+//     } else {
+//         throw new Error(`Invalid vertex provided (${vertex.x}, ${vertex.y})`)
+//     }
+//     return halfCoversAreValid
+// }

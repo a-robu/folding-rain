@@ -1,40 +1,42 @@
 import paper from "paper"
 import { Board } from "./board"
-import { Game } from "./game"
-import { GUI } from "./gui"
+import { ProceduralAnimation } from "./spontaneous"
+
+function computeBounds() {
+    return new paper.Rectangle(
+        0,
+        0,
+        Math.ceil(canvas.width / paper.view.zoom),
+        Math.ceil(canvas.height / paper.view.zoom)
+    )
+}
+
+function onResize() {
+    proceduralAnimation.bounds = computeBounds()
+}
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement
 paper.setup(canvas)
-
-let gameLayer = new paper.Layer()
-gameLayer.name = "board"
-let uiLayer = new paper.Layer()
-uiLayer.name = "ui"
-
-let board = new Board(20, 20)
-let game = new Game(board, gameLayer)
-let guiTool = new paper.Tool()
-let panButton = document.getElementById("panButton")
-if (!panButton) {
-    throw new Error("Pan button not found")
-}
-let foldButton = document.getElementById("foldButton")
-if (!foldButton) {
-    throw new Error("Fold button not found")
-}
-let gui = new GUI(board, game, uiLayer, paper.view, panButton, foldButton)
-// Wire up all the event listeners to the GUI
-guiTool.onMouseDrag = gui.onMouseDrag.bind(gui)
-guiTool.onMouseUp = gui.onMouseUp.bind(gui)
-guiTool.onMouseMove = gui.onMouseMove.bind(gui)
-panButton.addEventListener("click", gui.onPanButtonClick.bind(gui))
-foldButton.addEventListener("click", gui.onFoldButtonClick.bind(gui))
-document.addEventListener("keydown", gui.onKeyDown.bind(gui))
-canvas.addEventListener("wheel", gui.onWheel.bind(gui))
-
-// game.drawGrid(board)
 paper.view.zoom = 50
-// paper.view.rotate(45)
-paper.view.onFrame = game.onFrame.bind(game)
 
-gui.centerView()
+let seed: number
+const urlParams = new URLSearchParams(window.location.search)
+if (urlParams.has("seed")) {
+    seed = parseInt(urlParams.get("seed")!)
+    console.log("Using provided seed:", seed)
+} else {
+    seed = Math.floor(Math.random() * 1000000)
+    // Log a link to the current seed for reproducibility
+    console.log("Generating random seed:", seed, "Link:", window.location.href + "?seed=" + seed)
+}
+let boardLayer = new paper.Layer()
+let board = new Board()
+boardLayer.addChild(board.paperGroup)
+paper.view.onFrame = board.onFrame.bind(board)
+let initialBounds = computeBounds()
+paper.view.center = initialBounds.center
+let proceduralAnimation = new ProceduralAnimation(board, initialBounds, seed)
+paper.view.onResize = onResize
+onResize()
+
+proceduralAnimation.rainContinuously()

@@ -78,7 +78,7 @@ function renderCandidatesStory(
         }
         shape = board.addShape(isSecond ? 2 : 1, shape)
         let handedness = !isSecond // true for first (cw), false for second (ccw)
-        let foldBases = FoldSpecBasis.getAllBases(shape, handedness, fullCover)
+        let foldBases = FoldSpecBasis.getAllExpansions(shape, handedness, fullCover)
         for (let foldBase of foldBases) {
             drawArrow(annotationsLayer, foldBase.start, foldBase.basis)
             let foldSpecs = foldBase.getAll()
@@ -91,10 +91,35 @@ function renderCandidatesStory(
     return container
 }
 
-export const fullCover = withCommonArgs(function fullCover(args: CommonStoryArgs) {
+export const fullCoverExpansions = withCommonArgs(function fullCoverExpansions(
+    args: CommonStoryArgs
+) {
     return renderCandidatesStory(args, new paper.Rectangle(-1, -2, 11, 20), true, 9)
 })
 
-export const partialCover = withCommonArgs(function partialCover(args: CommonStoryArgs) {
+export const partialCoverExpansion = withCommonArgs(function partialCoverExpansion(
+    args: CommonStoryArgs
+) {
     return renderCandidatesStory(args, new paper.Rectangle(-3, -4, 15, 26), false, 12)
+})
+
+export const fullCoverContractions = withCommonArgs(function fullCoverContractions(
+    args: CommonStoryArgs
+) {
+    let bounds = new paper.Rectangle(-1, -2, 11, 20)
+    let { container, board, annotationsLayer } = rigamarole({
+        bounds,
+        zoom: 50,
+        ...args
+    })
+    let shape = board.addShape(1, MOAP())
+    let contractionBases = FoldSpecBasis.getAllFullCoverContractions(shape)
+    for (let foldBase of contractionBases) {
+        drawArrow(annotationsLayer, foldBase.start, foldBase.basis)
+        let foldSpecs = foldBase.getAll()
+        for (let foldSpec of foldSpecs) {
+            annotateFold(annotationsLayer, foldSpec)
+        }
+    }
+    return container
 })

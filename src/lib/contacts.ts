@@ -142,12 +142,63 @@ export function verifyFold(board: Board, fold: FoldSpec, action: FoldAction, sha
             }
         }
     } else if (action == FOLD_ACTION.Remove) {
+        let innerLockShapes: paper.Path[] = []
+        for (let lockShape of board.lockShapes.children) {
+            if (lockShape.data.id === undefined) {
+                throw new Error("Lock shape does not have an ID")
+            }
+            if (lockShape.data.id === shapeId) {
+                innerLockShapes.push(lockShape as paper.Path)
+            }
+        }
+        function clearOfLocks(triangle: paper.Path) {
+            for (let lockShape of innerLockShapes) {
+                let intersection = triangle.intersect(lockShape, {
+                    insert: false
+                }) as paper.Path
+                if (Math.abs(intersection.area) > 0.01) {
+                    return false
+                }
+            }
+            return true
+        }
         return {
             near: {
-                clearOfLocks: true
+                clearOfLocks: clearOfLocks(near)
             },
             far: {
-                clearOfLocks: true
+                clearOfLocks: clearOfLocks(far)
+            }
+        }
+    } else if (action == FOLD_ACTION.Contract) {
+        let innerLockShapes: paper.Path[] = []
+        for (let lockShape of board.lockShapes.children) {
+            if (lockShape.data.id === undefined) {
+                throw new Error("Lock shape does not have an ID")
+            }
+            if (lockShape.data.id === shapeId) {
+                innerLockShapes.push(lockShape as paper.Path)
+            }
+        }
+        function clearOfLocks(triangle: paper.Path) {
+            for (let lockShape of innerLockShapes) {
+                let intersection = triangle.intersect(lockShape, {
+                    insert: false
+                }) as paper.Path
+                if (Math.abs(intersection.area) > 0.01) {
+                    return false
+                }
+            }
+            return true
+        }
+        return {
+            near: {
+                fullyContained: isFullyContained(near, shape!),
+                clearOfLocks: clearOfLocks(near)
+            },
+            far: {
+                fullyContained: isFullyContained(far, shape!),
+                clearOfLocks: clearOfLocks(far)
             }
         }
     } else {

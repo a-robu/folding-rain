@@ -90,9 +90,9 @@ export function hingeLengthFactors(
         throw new Error(`Invalid origin coordinates: (${origin.x}, ${origin.y})`)
     }
     // Check the vector is either axis-aligned or diagonal.
-    let isAxisAligned = vector.x == 0 || vector.y == 0
+    let isAxisAligned = Math.abs(vector.x) < 0.01 || Math.abs(vector.y) < 0.01
     if (!isAxisAligned) {
-        if (Math.abs(vector.x) != Math.abs(vector.y)) {
+        if (Math.abs(Math.abs(vector.x) - Math.abs(vector.y)) > 0.01) {
             throw new Error(`Vector not perfectly diagonal: (${vector.x}, ${vector.y})`)
         }
     }

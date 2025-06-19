@@ -210,9 +210,7 @@ export class Board {
     ) {
         for (let segment of triangle.segments) {
             if (!isOnGrid(segment.point)) {
-                throw new Error(
-                    `Triangle segment point ${segment.point} is not a half-integer coordinate`
-                )
+                throw new Error(`Triangle segment point ${segment.point} is not on the grid`)
             }
         }
         if (shapeChange == SHAPE_CHANGE.Keep) {

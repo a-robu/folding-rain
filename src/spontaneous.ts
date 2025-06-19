@@ -28,18 +28,25 @@ export class ProceduralAnimation {
     }
 
     async rainContinuously() {
-        await tryCreate(this.board, this.bounds, this.random)
+        for (let i = 0; i < this.random.randRange(3, 10); i++) {
+            tryCreate(this.board, this.bounds, this.random, true)
+        }
         while (true) {
             if (this.random.float() < 0.01) {
                 tryCreate(this.board, this.bounds, this.random)
             }
-            let shapeId: number | null = null
-            let foldSpec: FoldSpec | null = null
-            shapeId = this.random.choice(Array.from(this.board.shapes.keys()))
-            let shape = this.board.shapes.get(shapeId!)
-            foldSpec = randomlyChooseFold(shape!, this.random, this.bounds)
-            if (foldSpec) {
-                this.board.foldAsync(shapeId!, foldSpec, FOLD_ACTION.Expand)
+            // if (this.random.float() < 0.01) {
+            tryRemove(this.board, this.random)
+            // }
+            if (this.random.float() < 0.1) {
+                let shapeId: number | null = null
+                let foldSpec: FoldSpec | null = null
+                shapeId = this.random.choice(Array.from(this.board.shapes.keys()))
+                let shape = this.board.shapes.get(shapeId!)
+                foldSpec = randomlyChooseFold(shape!, this.random, this.bounds)
+                if (foldSpec) {
+                    this.board.foldAsync(shapeId!, foldSpec, FOLD_ACTION.Expand)
+                }
             }
             await sleep(100)
         }
@@ -71,10 +78,41 @@ export function randomlyChooseFold(
     return foldSpec
 }
 
+export function tryRemove(board: Board, random: PRNG): Promise<void> | null {
+    const tol = 0.01
+    const candidates: number[] = []
+    for (const [id, shape] of board.shapes.entries()) {
+        if (!(shape instanceof paper.Path)) continue
+        if (shape.segments.length !== 4) continue
+        const lengths = shape.segments.map((seg, i) => {
+            const next = shape.segments[(i + 1) % 4]
+            return seg.point.getDistance(next.point, true)
+        })
+        const firstLen = lengths[0]
+        if (lengths.every(l => Math.abs(l - firstLen) < tol)) {
+            candidates.push(id)
+        }
+    }
+    if (candidates.length === 0) return null
+    const shapeId = random.choice(candidates)
+    const shape = board.shapes.get(shapeId)
+    if (!shape) return null
+    let firstIndex = random.randRange(0, 4)
+    let secondIndex = (firstIndex + 2) % 4
+    let firstPoint = shape.segments[firstIndex].point
+    let secondPoint = shape.segments[secondIndex].point
+    let foldSpec = FoldSpec.fromEndPoints(firstPoint, secondPoint, FOLD_COVER.Full)
+    if (!verificationAllOk(verifyFold(board, foldSpec, FOLD_ACTION.Remove, shapeId))) {
+        return null
+    }
+    return board.foldAsync(shapeId, foldSpec, FOLD_ACTION.Remove)
+}
+
 export function tryCreate(
     board: Board,
     bounds: paper.Rectangle,
-    random: PRNG
+    random: PRNG,
+    instantaneous = false
 ): Promise<void> | null {
     for (let attempt = 0; attempt < 10; attempt++) {
         let startVertex = random.choice(allVertices(bounds))
@@ -97,7 +135,12 @@ export function tryCreate(
             continue
         }
         let unusedIndex = board.shapes.size == 0 ? 1 : Math.max(...board.shapes.keys()) + 1
-        return board.foldAsync(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
+        if (instantaneous) {
+            board.foldInstantaneously(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
+            return Promise.resolve()
+        } else {
+            return board.foldAsync(unusedIndex, unfoldPlan, FOLD_ACTION.Create)
+        }
     }
     return null
 }

@@ -141,6 +141,15 @@ export function verifyFold(board: Board, fold: FoldSpec, action: FoldAction, sha
                 clearOfShapes: clearOfShapes(far)
             }
         }
+    } else if (action == FOLD_ACTION.Remove) {
+        return {
+            near: {
+                clearOfLocks: true
+            },
+            far: {
+                clearOfLocks: true
+            }
+        }
     } else {
         throw new Error(`Unsupported fold action: ${action}`)
     }

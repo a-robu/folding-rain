@@ -5,7 +5,8 @@ import {
     type ShapeChange,
     FOLD_TEMPLATES,
     FoldSpec,
-    SHAPE_CHANGE
+    SHAPE_CHANGE,
+    FOLD_ACTION
 } from "@/lib/fold-spec"
 import randomColor from "randomcolor"
 import { isOnGrid, roundToGrid } from "@/lib/grid"
@@ -49,12 +50,12 @@ export class Board {
         }
     }
 
-    private makePastelColor() {
-        return randomColor({
-            luminosity: "light",
-            seed: this.random.int()
-        })
-    }
+    // private makePastelColor() {
+    //     return randomColor({
+    //         luminosity: "light",
+    //         seed: this.random.int()
+    //     })
+    // }
 
     findPointContacts(point: paper.Point) {
         let existingShapeIds = []
@@ -136,22 +137,28 @@ export class Board {
     ) {
         let triangles = foldSpec.toTriangles()
         let template = FOLD_TEMPLATES[foldAction]
-        this.applyTriangleUpdate(shapeId, triangles.near, template.near)
+        this.applyTriangleUpdate(
+            shapeId,
+            triangles.near,
+            template.near,
+            foldAction == FOLD_ACTION.Remove
+        )
         let nearLockShape = triangles.near.clone()
         nearLockShape.data.id = shapeId
-        // nearLockShape.fillColor = new paper.Color(1, 0, 0)
-        // nearLockShape.fillColor.alpha = 0.5 // Semi-transparent
         this.shapesGroup.addChild(nearLockShape)
         this.lockShapes.addChild(nearLockShape)
         let farLockShape = triangles.far.clone()
         farLockShape.data.id = shapeId
-        // farLockShape.fillColor = new paper.Color(1, 1, 0)
-        // farLockShape.fillColor.alpha = 0.5 // Semi-transparent
         this.shapesGroup.addChild(farLockShape)
         this.lockShapes.addChild(farLockShape)
         this.notifyShapeUpdateListeners()
         function onComplete(board: Board) {
-            board.applyTriangleUpdate(shapeId, triangles.far, template.far)
+            board.applyTriangleUpdate(
+                shapeId,
+                triangles.far,
+                template.far,
+                foldAction == FOLD_ACTION.Remove
+            )
             farLockShape.remove()
             nearLockShape.remove()
             board.notifyShapeUpdateListeners()
@@ -195,7 +202,12 @@ export class Board {
         })
     }
 
-    private applyTriangleUpdate(shapeId: number, triangle: paper.Path, shapeChange: ShapeChange) {
+    private applyTriangleUpdate(
+        shapeId: number,
+        triangle: paper.Path,
+        shapeChange: ShapeChange,
+        expectRemoval = false
+    ) {
         for (let segment of triangle.segments) {
             if (!isOnGrid(segment.point)) {
                 throw new Error(
@@ -218,6 +230,7 @@ export class Board {
                 this.shapes.delete(shapeId)
                 shape.remove()
                 result.remove()
+                console.log(`Shape with ID ${shapeId} removed`)
             } else {
                 // Swap the old shape with the new one that was created
                 shape.remove()
@@ -255,12 +268,15 @@ export class Board {
             throw new Error("Unrecognized color transition: " + `${shapeChange}`)
         }
         let shape = this.shapes.get(shapeId)
-        if (!shape) {
-            throw new Error(`Shape with ID ${shapeId} does not exist after applying update`)
-        }
-        for (let segment of shape.segments) {
-            if (!isOnGrid(segment.point)) {
-                segment.point = roundToGrid(segment.point)
+        if (shape == null) {
+            if (!expectRemoval) {
+                throw new Error(`Shape with ID ${shapeId} does not exist after applying update`)
+            }
+        } else {
+            for (let segment of shape.segments) {
+                if (!isOnGrid(segment.point)) {
+                    segment.point = roundToGrid(segment.point)
+                }
             }
         }
         // At the end of this method, after any shape changes:

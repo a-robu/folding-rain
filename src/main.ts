@@ -4,11 +4,14 @@ import { ProceduralAnimation } from "./spontaneous"
 import { GUI } from "./gui"
 
 function computeBounds() {
+    // console.log(paper.view.bounds)
+    const bounds = paper.view.bounds
+    // const zoom = paper.view.zoom
     return new paper.Rectangle(
-        0,
-        0,
-        Math.ceil(paper.view.bounds.width / paper.view.zoom),
-        Math.ceil(paper.view.bounds.height / paper.view.zoom)
+        Math.floor(bounds.x),
+        Math.floor(bounds.y),
+        Math.ceil(bounds.width),
+        Math.ceil(bounds.height)
     )
 }
 
@@ -39,6 +42,8 @@ let proceduralAnimation = new ProceduralAnimation(board, initialBounds, seed)
 paper.view.onResize = onResize
 onResize()
 let gui = new GUI(paper.view)
+gui.attachPinchZoom(canvas)
+gui.onResize = onResize
 let tool = new paper.Tool()
 tool.onMouseDrag = (e: paper.ToolEvent) => {
     onResize()

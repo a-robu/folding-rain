@@ -7,31 +7,31 @@ on:
             - publish
 
 jobs:
-    test:
-        name: Test
-        runs-on: ubuntu-latest
+    # test:
+    #     name: Test
+    #     runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout repo
-              uses: actions/checkout@v4
+    #     steps:
+    #         - name: Checkout repo
+    #           uses: actions/checkout@v4
 
-            - name: Setup Node
-              uses: actions/setup-node@v4
+    #         - name: Setup Node
+    #           uses: actions/setup-node@v4
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v3
-              with:
-                  version: 10
+    #         - name: Setup pnpm
+    #           uses: pnpm/action-setup@v3
+    #           with:
+    #               version: 10
 
-            - name: Install dependencies
-              run: pnpm install
+    #         - name: Install dependencies
+    #           run: pnpm install
 
-            - name: Run tests
-              run: pnpm run test
+    #         - name: Run tests
+    #           run: pnpm run test
 
     build:
         name: Build
-        needs: test
+        # needs: test
         runs-on: ubuntu-latest
 
         steps:

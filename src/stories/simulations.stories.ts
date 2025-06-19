@@ -1,19 +1,17 @@
-import type PRNG from "random-seedable/@types/PRNG"
 import { XORShift } from "random-seedable"
 import paper from "paper"
 import { FOLD_ACTION, FOLD_COVER, FoldSpec } from "@/lib/fold-spec"
 import { rigamarole } from "./lib/rigamarole"
-import { exponentialDelay, sleep } from "@/lib/time"
 import { withCommonArgs } from "./lib/common-args"
 import type { CommonStoryArgs } from "./lib/common-args"
 import { visualiseFoldSpec } from "./lib/visualize-fold"
 import {
+    detectSquare,
     ProceduralAnimation,
-    randomlyChooseContractionFold,
     randomlyChooseExpansionFold,
-    tryCreate
+    detectRemovableRightIsosceles
 } from "@/spontaneous"
-import type { Board } from "@/board"
+import { sleep } from "@/lib/time"
 
 export default {
     title: "Simulations"
@@ -98,5 +96,90 @@ export const growthUnroll = withCommonArgs(function growthUnroll(args: CommonSto
         let redoneFoldSpec = foldSpec.transform(offsetTransform)
         board.foldInstantaneously(i + 1, redoneFoldSpec, FOLD_ACTION.Expand)
     }
+    return container
+})
+
+export const removeSquares = withCommonArgs(function removeSquares(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(-1, -1, 8, 8)
+    let { container, board, annotationsLayer } = rigamarole({
+        bounds,
+        ...args
+    })
+    ;(async () => {
+        // Create a few squares
+        const squares = [
+            [new paper.Point(1, 0), new paper.Point(1, 2)],
+            [new paper.Point(3, 0), new paper.Point(5, 2)],
+            [new paper.Point(0, 3), new paper.Point(3, 6)]
+        ]
+        for (let i = 0; i < squares.length; i++) {
+            let spec = FoldSpec.fromEndPoints(squares[i][0], squares[i][1], FOLD_COVER.Full)
+            board.foldInstantaneously(i + 1, spec, FOLD_ACTION.Create)
+        }
+        await sleep(400)
+        // Remove squares one by one using detectSquare
+        for (let id of Array.from(board.shapes.keys())) {
+            let shape = board.shapes.get(id)
+            if (!shape) continue
+            if (!detectSquare(shape)) continue
+            // Pick a random i for FoldSpec.fromSquare
+            let i = Math.floor(Math.random() * 4)
+            let foldSpec = FoldSpec.fromSquare(shape, i)
+            let viz = visualiseFoldSpec(foldSpec, FOLD_ACTION.Remove)
+            annotationsLayer.addChild(viz)
+            let fold = board.foldAsync(id, foldSpec, FOLD_ACTION.Remove)
+            await sleep(600)
+            viz.remove()
+            await fold
+        }
+    })()
+    return container
+})
+
+export const removeTriangles = withCommonArgs(function removeTriangles(args: CommonStoryArgs) {
+    let bounds = new paper.Rectangle(-1, -1, 8, 8)
+    let { container, board, annotationsLayer } = rigamarole({
+        bounds,
+        ...args
+    })
+    ;(async () => {
+        // Create a few right isosceles triangles
+        const triangles = [
+            [new paper.Point(0, 0), new paper.Point(2, 2)],
+            [new paper.Point(4, 0), new paper.Point(4, 2)]
+        ]
+        for (let i = 0; i < triangles.length; i++) {
+            let spec = FoldSpec.fromEndPoints(triangles[i][0], triangles[i][1], FOLD_COVER.Right)
+            board.foldInstantaneously(i + 1, spec, FOLD_ACTION.Create)
+            // Add the third point to make a triangle
+            // let shape = board.shapes.get(i + 1)
+            // if (shape) {
+            //     // shape.add(triangles[i][2])
+            //     // shape.closed = true
+            // }
+        }
+        await sleep(400)
+        // Remove triangles one by one using detectRemovableRightIsosceles
+        for (let id of Array.from(board.shapes.keys())) {
+            let shape = board.shapes.get(id)
+            if (!shape) continue
+            let detection = detectRemovableRightIsosceles(shape)
+            if (!detection) {
+                continue
+            }
+            let { next, previous } = detection
+            // Randomly choose left or right cover
+            let foldSpec =
+                Math.random() < 0.5
+                    ? FoldSpec.fromEndPoints(next, previous, FOLD_COVER.Right)
+                    : FoldSpec.fromEndPoints(previous, next, FOLD_COVER.Left)
+            let viz = visualiseFoldSpec(foldSpec, FOLD_ACTION.Remove)
+            annotationsLayer.addChild(viz)
+            let fold = board.foldAsync(id, foldSpec, FOLD_ACTION.Remove)
+            await sleep(600)
+            viz.remove()
+            await fold
+        }
+    })()
     return container
 })

@@ -165,6 +165,20 @@ export class FoldSpec {
     }
 
     /**
+     * Create a FoldSpec for a square path, using two opposite vertices.
+     * @param shape A paper.Path with 4 segments (square)
+     * @param i Index of the first vertex (0-3); the second is (i+2)%4
+     */
+    static fromSquare(shape: paper.Path, i: number): FoldSpec {
+        if (!(shape instanceof paper.Path) || shape.segments.length !== 4) {
+            throw new Error("fromSquare expects a Path with 4 segments")
+        }
+        const firstPoint = shape.segments[i].point
+        const secondPoint = shape.segments[(i + 2) % 4].point
+        return FoldSpec.fromEndPoints(firstPoint, secondPoint, FOLD_COVER.Full)
+    }
+
+    /**
      * "Compiles" the fold definition into two triangles.
      */
     toTriangles() {

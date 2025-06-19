@@ -7,6 +7,7 @@ import { withCommonArgs } from "./lib/common-args"
 import type { CommonStoryArgs } from "./lib/common-args"
 import { visualiseFoldSpec } from "./lib/visualize-fold"
 import { roundToGrid } from "@/lib/grid"
+import { detectSquare } from "@/spontaneous"
 
 export default {
     title: "Patterns"

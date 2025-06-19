@@ -8,6 +8,7 @@ import { allVertices, squareDiagonalRays, roundToGrid, isOnGrid } from "@/lib/gr
 import { normalise, randomChoiceWeighted } from "@/lib/randomness"
 import { XORShift } from "random-seedable"
 import { exponentialDelay, sleep } from "@/lib/time"
+import { getSegmentAngle } from "./lib/vec"
 
 export class ProceduralAnimation {
     private random: PRNG
@@ -35,8 +36,11 @@ export class ProceduralAnimation {
             if (this.random.float() < 0.01) {
                 tryCreate(this.board, this.bounds, this.random)
             }
-            if (this.random.float() < 0.005) {
-                tryRemove(this.board, this.random)
+            if (this.random.float() < 0.01) {
+                tryRemoveSquare(this.board, this.random)
+            }
+            if (this.random.float() < 0.01) {
+                tryRemoveRightIsosceles(this.board, this.random)
             }
             // if (this.random.float() < 0.1) {
             //     let shapeId: number | null = null
@@ -54,8 +58,8 @@ export class ProceduralAnimation {
                 shapeId = this.random.choice(Array.from(this.board.shapes.keys()))
                 let shape = this.board.shapes.get(shapeId!)
                 let foldAction: FoldAction
-                if (this.random.bool()) {
-                    foldSpec = randomlyChooseExpansionFold(shape!, this.random, this.bounds)
+                if (this.random.float() < 0.6) {
+                    foldSpec = randomlyChooseExpansionFold(shape!, this.random)
                     foldAction = FOLD_ACTION.Expand
                 } else {
                     foldSpec = randomlyChooseContractionFold(shape!, this.random)
@@ -71,11 +75,7 @@ export class ProceduralAnimation {
     }
 }
 
-export function randomlyChooseExpansionFold(
-    shape: paper.Path,
-    random: PRNG,
-    bounds: paper.Rectangle
-): FoldSpec | null {
+export function randomlyChooseExpansionFold(shape: paper.Path, random: PRNG): FoldSpec | null {
     let clockwise = random.bool()
     let fullCover = random.bool()
     let foldBases = FoldSpecBasis.getAllExpansions(shape, clockwise, fullCover)
@@ -107,7 +107,6 @@ export function randomlyChooseContractionFold(shape: paper.Path, random: PRNG): 
         [1, 2, 3, 4, 5],
         normalise([25, 50, 50, 10, 5])
     )
-    console.log(basis)
     let foldSpec = basis.atMultiplier(basis.maxMultiplier(maxMultiplier))
     let verification = verifyFold(shape.data.board, foldSpec, FOLD_ACTION.Contract, shape.data.id)
     if (!verificationAllOk(verification)) {
@@ -116,30 +115,91 @@ export function randomlyChooseContractionFold(shape: paper.Path, random: PRNG): 
     return foldSpec
 }
 
-export function tryRemove(board: Board, random: PRNG): Promise<void> | null {
+export function detectSquare(shape: paper.Path, tol: number = 0.01): boolean {
+    if (!(shape instanceof paper.Path)) return false
+    if (shape.segments.length !== 4) return false
+    const lengths = shape.segments.map((seg, i) => {
+        const next = shape.segments[(i + 1) % 4]
+        return seg.point.getDistance(next.point, true)
+    })
+    const firstLen = lengths[0]
+    return lengths.every(l => Math.abs(l - firstLen) < tol)
+}
+
+type TriangleDetectionResult = {
+    apex: paper.Point
+    next: paper.Point
+    previous: paper.Point
+} | null
+
+export function detectRemovableRightIsosceles(
+    shape: paper.Path,
+    tol: number = 0.01
+): TriangleDetectionResult {
+    if (!(shape instanceof paper.Path)) return null
+    if (shape.segments.length !== 3) return null
+    // find the vertex with 90 deg angle
+    for (let i = 0; i < 3; i++) {
+        const seg = shape.segments[i]
+        let angle = getSegmentAngle(seg)
+
+        if (Math.abs(angle - 90) < tol) {
+            let hypotenuseMidpoint = seg.next.point.add(seg.previous.point).divide(2)
+            // check the midpoint coords are close enough to integers
+            if (
+                Math.abs(hypotenuseMidpoint.x % 1) > tol ||
+                Math.abs(hypotenuseMidpoint.y % 1) > tol
+            ) {
+                return null
+            }
+            // found the apex
+            return {
+                apex: seg.point,
+                next: seg.next.point,
+                previous: seg.previous.point
+            }
+        }
+    }
+    throw new Error(`Shape ${shape.id} is not a right isosceles triangle`)
+}
+
+export function tryRemoveSquare(board: Board, random: PRNG): Promise<void> | null {
     const tol = 0.01
     const candidates: number[] = []
     for (const [id, shape] of board.shapes.entries()) {
-        if (!(shape instanceof paper.Path)) continue
-        if (shape.segments.length !== 4) continue
-        const lengths = shape.segments.map((seg, i) => {
-            const next = shape.segments[(i + 1) % 4]
-            return seg.point.getDistance(next.point, true)
-        })
-        const firstLen = lengths[0]
-        if (lengths.every(l => Math.abs(l - firstLen) < tol)) {
-            candidates.push(id)
-        }
+        if (!detectSquare(shape, tol)) continue
+        candidates.push(id)
     }
     if (candidates.length === 0) return null
     const shapeId = random.choice(candidates)
     const shape = board.shapes.get(shapeId)
     if (!shape) return null
-    let firstIndex = random.randRange(0, 4)
-    let secondIndex = (firstIndex + 2) % 4
-    let firstPoint = shape.segments[firstIndex].point
-    let secondPoint = shape.segments[secondIndex].point
-    let foldSpec = FoldSpec.fromEndPoints(firstPoint, secondPoint, FOLD_COVER.Full)
+    let i = random.randRange(0, 4)
+    let foldSpec = FoldSpec.fromSquare(shape, i)
+    if (!verificationAllOk(verifyFold(board, foldSpec, FOLD_ACTION.Remove, shapeId))) {
+        return null
+    }
+    return board.foldAsync(shapeId, foldSpec, FOLD_ACTION.Remove)
+}
+
+export function tryRemoveRightIsosceles(board: Board, random: PRNG): Promise<void> | null {
+    const tol = 0.01
+    const candidates: [number, TriangleDetectionResult][] = []
+    for (const [id, shape] of board.shapes.entries()) {
+        const result = detectRemovableRightIsosceles(shape, tol)
+        if (!result) continue
+        candidates.push([id, result])
+    }
+    if (candidates.length === 0) return null
+    const [shapeId, { apex, next, previous }] = random.choice(candidates)
+    const shape = board.shapes.get(shapeId)
+    if (!shape) return null
+    let foldSpec: FoldSpec
+    if (random.bool()) {
+        foldSpec = FoldSpec.fromEndPoints(next, previous, FOLD_COVER.Right)
+    } else {
+        foldSpec = FoldSpec.fromEndPoints(previous, next, FOLD_COVER.Left)
+    }
     if (!verificationAllOk(verifyFold(board, foldSpec, FOLD_ACTION.Remove, shapeId))) {
         return null
     }

@@ -1,12 +1,20 @@
 {
-    "name": "folding-rain",
+    "name": "@a-robu/folding-rain",
     "private": true,
-    "version": "0.0.0",
+    "version": "0.0.1",
     "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com/"
+    },
     "scripts": {
         "dev": "vite",
         "test": "vitest run --config vitest.config.ts",
-        "build": "tsc --noEmit && vite build --config vitest.config.ts || vite build --config vitest.config.ts",
+        "build": "tsc",
         "preview": "vite preview",
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build"

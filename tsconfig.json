@@ -11,6 +11,7 @@
         "verbatimModuleSyntax": true,
         "moduleDetection": "force",
         "noEmit": false,
+        "declaration": true,
         "outDir": "dist",
 
         /* Linting */

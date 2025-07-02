@@ -1,4 +1,3 @@
-import paper from "paper"
 import { easeOutCirc, cosineEase } from "@/lib/easing-functions"
 
 export class FoldAnimation {

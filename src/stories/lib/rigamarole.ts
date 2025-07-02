@@ -1,6 +1,6 @@
 import { init } from "@/init"
 import paper from "paper"
-import { ContactViz } from "./contact-viz"
+// import { ContactViz } from "./contact-viz"
 import { LabelViz } from "./label-viz"
 import type { Board } from "@/board"
 import { drawGrid } from "@/draw-grid"
@@ -80,7 +80,7 @@ export function rigamarole({
 
     window.board = board
 
-    let contactVizInstance: ContactViz | undefined = undefined
+    // let contactVizInstance: ContactViz | undefined = undefined
 
     let labelVizInstance: LabelViz | undefined = undefined
     if (showShapeId) {
@@ -92,7 +92,7 @@ export function rigamarole({
     function updateVertexLabelsForAllShapes() {
         if (!vertexLabelsGroup) return
         vertexLabelsGroup.removeChildren()
-        for (const shape of board.shapes.values()) {
+        for (const shape of board!.shapes.values()) {
             shape.segments.forEach((segment, index) => {
                 let circle = new paper.Path.Circle({
                     center: segment.point,
@@ -134,7 +134,7 @@ export function rigamarole({
         if (showVertexLabels !== "off") {
             vertexLabelsGroup = new paper.Group()
             updateVertexLabelsForAllShapes()
-            board.addShapeUpdateListener(updateVertexLabelsForAllShapes)
+            board!.addShapeUpdateListener(updateVertexLabelsForAllShapes)
         }
     }
 
@@ -149,7 +149,7 @@ export function rigamarole({
         container,
         board,
         annotationsLayer,
-        contactViz: contactVizInstance,
+        // contactViz: contactVizInstance,
         labelViz: labelVizInstance,
         vertexLabelsGroup,
         setShowVertexLabels,

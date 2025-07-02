@@ -30,7 +30,7 @@ export class ProceduralAnimation {
 
     async rainContinuously() {
         for (let i = 0; i < this.random.randRange(3, 10); i++) {
-            let attempt = tryCreate(this.board, this.bounds, this.random)
+            tryCreate(this.board, this.bounds, this.random)
             // if (attempt) {
             //     await attempt
             // }
@@ -194,7 +194,7 @@ export function tryRemoveRightIsosceles(board: Board, random: PRNG): Promise<voi
         candidates.push([id, result])
     }
     if (candidates.length === 0) return null
-    const [shapeId, { apex, next, previous }] = random.choice(candidates)
+    const [shapeId, { next, previous }] = random.choice(candidates)
     const shape = board.shapes.get(shapeId)
     if (!shape) return null
     let foldSpec: FoldSpec

@@ -8,7 +8,6 @@ import {
     SHAPE_CHANGE,
     FOLD_ACTION
 } from "@/lib/fold-spec"
-import randomColor from "randomcolor"
 import { isOnGrid, roundToGrid } from "@/lib/grid"
 import { FoldAnimation } from "@/fold-animation"
 

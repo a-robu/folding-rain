@@ -1,5 +1,5 @@
-import { describe, test, expect, assert } from "vitest"
-import paper from "paper"
+import { describe, test, expect } from "vitest"
+// import paper from "paper"
 import { applySpecimen, expandFoldSpecimens } from "@/speciments/expand-fold-specimens"
 import { verifyFold } from "@/lib/contacts"
 import { Board } from "@/board"

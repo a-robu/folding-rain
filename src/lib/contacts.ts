@@ -1,5 +1,5 @@
 import type { Board } from "@/board"
-import { FOLD_ACTION, type FoldAction, type FoldSpec, type Side } from "./fold-spec"
+import { FOLD_ACTION, type FoldAction, type FoldSpec } from "./fold-spec"
 
 export function hasHoles(shape: paper.Path) {
     // Check if the shape has any holes

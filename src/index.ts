@@ -1,6 +1,6 @@
 import paper from "paper"
-import { Board } from "./board"
-import { ProceduralAnimation } from "./spontaneous"
+import { Board } from "@/board"
+import { ProceduralAnimation } from "@/spontaneous"
 
 export { Board, ProceduralAnimation }
 

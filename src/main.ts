@@ -1,9 +1,9 @@
 import paper from "paper"
 import { GUI } from "@/gui"
-import { computeBounds, Board, ProceduralAnimation } from "@/index"
+import { Board, ProceduralAnimation } from "@/index"
 
 function onResize() {
-    proceduralAnimation.bounds = computeBounds()
+    proceduralAnimation.setBounds(paper.view.bounds)
 }
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement
@@ -23,9 +23,9 @@ let boardLayer = new paper.Layer()
 let board = new Board()
 boardLayer.addChild(board.paperGroup)
 paper.view.onFrame = board.onFrame.bind(board)
-let initialBounds = computeBounds()
-paper.view.center = initialBounds.center
-let proceduralAnimation = new ProceduralAnimation(board, initialBounds, seed)
+// let initialBounds = computeBounds()
+paper.view.center = paper.view.bounds.center
+let proceduralAnimation = new ProceduralAnimation(board, paper.view.bounds, seed)
 paper.view.onResize = onResize
 onResize()
 let gui = new GUI(paper.view)
@@ -40,5 +40,9 @@ canvas.addEventListener("wheel", (e: WheelEvent) => {
     onResize()
     gui.onWheel(e)
 })
+
+for (let i = 0; i < Math.floor(paper.view.bounds.area * 0.01); i++) {
+    proceduralAnimation.tryAddRandomShape()
+}
 
 proceduralAnimation.rainContinuously()

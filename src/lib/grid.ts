@@ -10,6 +10,9 @@ export function isOnGrid(point: paper.Point) {
     return Number.isInteger(point.x) && Number.isInteger(point.y)
 }
 
+/**
+ * Snap to the nearest integer coordinates.
+ */
 export function roundToGrid(point: paper.Point): paper.Point {
     let result = point.round()
     // Fix weird -0.0 values using Object.is
@@ -20,6 +23,20 @@ export function roundToGrid(point: paper.Point): paper.Point {
         result.y = 0
     }
     return result
+}
+
+/**
+ * Expand bounds to the nearest integer values.
+ */
+export function expandBounds(bounds: paper.Rectangle): paper.Rectangle {
+    // console.log(paper.view.bounds)
+    // const zoom = paper.view.zoom
+    return new paper.Rectangle(
+        Math.floor(bounds.x),
+        Math.floor(bounds.y),
+        Math.ceil(bounds.width),
+        Math.ceil(bounds.height)
+    )
 }
 
 /**

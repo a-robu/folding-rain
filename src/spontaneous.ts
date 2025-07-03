@@ -4,16 +4,17 @@ import { Board } from "./board"
 import { verificationAllOk, verifyFold } from "@/lib/contacts"
 import { FoldSpec, FOLD_ACTION, FOLD_COVERS, FOLD_COVER, type FoldAction } from "@/lib/fold-spec"
 import { FoldSpecBasis } from "@/lib/fold-spec-basis"
-import { allVertices, squareDiagonalRays, roundToGrid, isOnGrid } from "@/lib/grid"
+import { allVertices, squareDiagonalRays, roundToGrid, isOnGrid, expandBounds } from "@/lib/grid"
 import { normalise, randomChoiceWeighted } from "@/lib/randomness"
 import { XORShift } from "random-seedable"
 import { exponentialDelay, sleep } from "@/lib/time"
-import { getSegmentAngle } from "./lib/vec"
+import { getSegmentAngle } from "@/lib/vec"
+import { randomGridPolygon } from "./random-grid-polygon"
 
 export class ProceduralAnimation {
     private random: PRNG
     private board: Board
-    bounds: paper.Rectangle
+    private bounds: paper.Rectangle
 
     constructor(board: Board, bounds: paper.Rectangle, seed?: number) {
         // ensure mandatory arguments are provided
@@ -24,25 +25,183 @@ export class ProceduralAnimation {
             throw new Error("A valid paper.Rectangle bounds is required.")
         }
         this.board = board
-        this.bounds = bounds
+        this.bounds = expandBounds(bounds)
         this.random = new XORShift(seed)
     }
 
-    async rainContinuously() {
-        for (let i = 0; i < this.random.randRange(3, 10); i++) {
-            tryCreate(this.board, this.bounds, this.random)
-            // if (attempt) {
-            //     await attempt
+    setBounds(bounds: paper.Rectangle) {
+        if (!bounds || !(bounds instanceof paper.Rectangle)) {
+            throw new Error("A valid paper.Rectangle bounds is required.")
+        }
+        this.bounds = expandBounds(bounds)
+    }
+
+    private createSmallerBounds(maxSize: number): paper.Rectangle {
+        // Generate a random position within the main bounds
+        const maxWidth = Math.min(maxSize, this.bounds.width)
+        const maxHeight = Math.min(maxSize, this.bounds.height)
+
+        // Random width and height up to maxSize
+        const width = this.random.randRange(Math.min(3, maxWidth), maxWidth)
+        const height = this.random.randRange(Math.min(3, maxHeight), maxHeight)
+
+        // Random position ensuring the smaller bounds fit within main bounds
+        const maxLeft = this.bounds.right - width
+        const maxTop = this.bounds.bottom - height
+        const left = this.random.randRange(this.bounds.left, maxLeft)
+        const top = this.random.randRange(this.bounds.top, maxTop)
+
+        return new paper.Rectangle(left, top, width, height)
+    }
+
+    tryAddRandomShape(attempts = 3, maxSize = 10): void {
+        // console.log(`🎲 tryAddRandomShape: Starting with ${attempts} attempts`)
+        // console.log(`📏 Bounds:`, this.bounds)
+        // console.log(`🏠 Current board shapes count:`, this.board.shapes.size)
+        // console.log(`🔒 Current lock shapes count:`, this.board.lockShapes.children.length)
+
+        // Log existing shapes
+        if (this.board.shapes.size > 0) {
+            // console.log(`🏠 Existing shapes:`)
+            // for (let [id, shape] of this.board.shapes.entries()) {
+            //     // console.log(`  Shape ${id}: ${shape.segments.length} segments, points:`,
+            //     //     shape.segments.map(seg => `(${seg.point.x}, ${seg.point.y})`))
             // }
         }
+
+        // Log lock shapes
+        if (this.board.lockShapes.children.length > 0) {
+            // console.log(`🔒 Lock shapes:`)
+            // this.board.lockShapes.children.forEach((lock, index) => {
+            //     const lockPath = lock as paper.Path
+            //     // console.log(`  Lock ${index}: ${lockPath.segments.length} segments, points:`,
+            //     //     lockPath.segments.map(seg => `(${seg.point.x}, ${seg.point.y})`))
+            // })
+        }
+
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            // console.log(`\n🔄 Attempt ${attempt + 1}/${attempts}`)
+
+            // Create smaller bounds for the random polygon, capped to maxSize
+            const smallerBounds = this.createSmallerBounds(maxSize)
+
+            // Generate a random polygon with smaller bounds
+            const poly = randomGridPolygon(smallerBounds, this.random)
+            // console.log(`📐 Generated polygon with ${poly.segments.length} segments`)
+            // console.log(`📍 Polygon points:`, poly.segments.map(seg => `(${seg.point.x}, ${seg.point.y})`))
+
+            // Check for grid alignment (all vertices integer)
+            // const gridAlignedVertices = poly.segments.map(seg => ({
+            //     point: seg.point,
+            //     isOnGrid: isOnGrid(seg.point)
+            // }))
+            // console.log(`🎯 Grid alignment check:`, gridAlignedVertices)
+
+            if (!poly.segments.every(seg => isOnGrid(seg.point))) {
+                // console.log(`❌ Grid alignment failed - continuing to next attempt`)
+                continue
+            }
+            // console.log(`✅ Grid alignment passed`)
+
+            // Check for contact with existing shapes or locks
+            // console.log(`🔍 Checking clearance with existing shapes...`)
+            let clearOfShapes = true
+            let shapeCollisionDetails = []
+
+            for (let [shapeId, other] of this.board.shapes.entries()) {
+                const intersects = poly.intersects(other) || other.intersects(poly)
+                const polyContainsOther = poly.contains(other.segments[0].point)
+                const otherContainsPoly = other.contains(poly.segments[0].point)
+
+                shapeCollisionDetails.push({
+                    shapeId,
+                    intersects,
+                    polyContainsOther,
+                    otherContainsPoly,
+                    hasCollision: intersects || polyContainsOther || otherContainsPoly
+                })
+
+                if (intersects || polyContainsOther || otherContainsPoly) {
+                    clearOfShapes = false
+                    // console.log(`💥 Shape collision detected with shape ${shapeId}:`, {
+                    //     intersects,
+                    //     polyContainsOther,
+                    //     otherContainsPoly
+                    // })
+                    break
+                }
+            }
+
+            // console.log(`🏠 Shape clearance details:`, shapeCollisionDetails)
+            // console.log(`🏠 Clear of shapes:`, clearOfShapes)
+
+            // console.log(`🔍 Checking clearance with lock shapes...`)
+            let clearOfLocks = true
+            let lockCollisionDetails = []
+
+            for (let [lockIndex, lock] of this.board.lockShapes.children.entries()) {
+                const lockPath = lock as paper.Path
+                const intersects = poly.intersects(lockPath) || lockPath.intersects(poly)
+                const polyContainsLock = poly.contains(lockPath.segments[0].point)
+                const lockContainsPoly = lockPath.contains(poly.segments[0].point)
+
+                lockCollisionDetails.push({
+                    lockIndex,
+                    intersects,
+                    polyContainsLock,
+                    lockContainsPoly,
+                    hasCollision: intersects || polyContainsLock || lockContainsPoly
+                })
+
+                if (intersects || polyContainsLock || lockContainsPoly) {
+                    clearOfLocks = false
+                    // console.log(`🔒 Lock collision detected with lock ${lockIndex}:`, {
+                    //     intersects,
+                    //     polyContainsLock,
+                    //     lockContainsPoly
+                    // })
+                    break
+                }
+            }
+
+            // console.log(`🔒 Lock clearance details:`, lockCollisionDetails)
+            // console.log(`🔒 Clear of locks:`, clearOfLocks)
+
+            if (!clearOfShapes || !clearOfLocks) {
+                // console.log(`❌ Clearance failed - continuing to next attempt`)
+                continue
+            }
+
+            // console.log(`✅ All clearance checks passed!`)
+
+            // Add the shape
+            const unusedIndex =
+                this.board.shapes.size === 0 ? 1 : Math.max(...this.board.shapes.keys()) + 1
+            // console.log(`🎯 Adding shape with index:`, unusedIndex)
+
+            this.board.addShape(unusedIndex, poly)
+            // console.log(`🎉 Successfully added shape! New shapes count:`, this.board.shapes.size)
+            return
+        }
+
+        // console.log(`😞 tryAddRandomShape: Failed to add shape after ${attempts} attempts`)
+    }
+
+    async rainContinuously() {
+        // for (let i = 0; i < this.random.randRange(3, 10); i++) {
+        //     tryCreate(this.board, this.bounds, this.random)
+        //     // if (attempt) {
+        //     //     await attempt
+        //     // }
+        // }
         while (true) {
-            if (this.random.float() < 0.01) {
+            if (this.random.float() < this.bounds.area * 0.00001) {
                 tryCreate(this.board, this.bounds, this.random)
             }
-            if (this.random.float() < 0.01) {
+            if (this.random.float() < this.bounds.area * 0.0001) {
                 tryRemoveSquare(this.board, this.random)
             }
-            if (this.random.float() < 0.01) {
+            if (this.random.float() < this.bounds.area * 0.0001) {
                 tryRemoveRightIsosceles(this.board, this.random)
             }
             // if (this.random.float() < 0.1) {
@@ -55,7 +214,7 @@ export class ProceduralAnimation {
             //         this.board.foldAsync(shapeId!, foldSpec, FOLD_ACTION.Contract)
             //     }
             // }
-            if (this.board.shapes.size > 0 && this.random.float() < 0.1) {
+            if (this.board.shapes.size > 0 && this.random.float() < this.bounds.area * 0.0001) {
                 let shapeId: number | null = null
                 let foldSpec: FoldSpec | null = null
                 shapeId = this.random.choice(Array.from(this.board.shapes.keys()))
